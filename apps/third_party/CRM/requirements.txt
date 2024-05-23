@@ -1,0 +1,16 @@
+gradio
+huggingface-hub
+diffusers==0.24.0
+einops==0.7.0
+Pillow==10.1.0
+transformers==4.27.1
+open-clip-torch==2.7.0
+opencv-contrib-python-headless==4.9.0.80
+opencv-python-headless==4.9.0.80
+omegaconf
+rembg
+pygltflib
+kiui
+trimesh
+xatlas
+pymeshlab

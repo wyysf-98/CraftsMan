@@ -1,0 +1,21 @@
+config:
+# others
+    seed: 1234
+    num_frames: 7
+    mode: pixel
+    offset_noise: true
+# model related
+    models:
+        config: imagedream/configs/sd_v2_base_ipmv_zero_SNR.yaml
+        resume: models/pixel.pth
+# sampler related
+    sampler:
+        target: libs.sample.ImageDreamDiffusion
+        params:
+            mode: pixel
+            num_frames: 7
+            camera_views: [1, 2, 3, 4, 5, 0, 0]
+            ref_position: 6
+            random_background: false
+            offset_noise: true
+            resize_rate: 1.0
