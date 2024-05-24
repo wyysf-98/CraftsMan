@@ -8,7 +8,8 @@
 #####  <p align="center"> <sup>1</sup>HKUST, <sup>2</sup>LightIllusions, <sup>3</sup>HKUST(GZ), <sup>4</sup>Tencent AI Lab, <sup>5</sup>HKU</p>
 <div align="center">
   <a href="https://github.com/Craftsman3D.github.io/"><img src="https://img.shields.io/static/v1?label=Project%20Page&message=Github&color=blue&logo=github-pages"></a> &ensp;
-  <a href="https://huggingface.co/"><img src="https://img.shields.io/static/v1?label=SAM-LLaVA&message=HF&color=yellow"></a> &ensp;
+  <a href="https://huggingface.co/spaces/wyysf/CraftsMan"><img src="https://img.shields.io/static/v1?label=Demo&message=HF&color=yellow"></a> &ensp;
+  <a href="https://242eab44e57c9492b2.gradio.live/"><img src="https://img.shields.io/static/v1?label=Gradio&message=HF&color=yellow"></a> &ensp;
   <a href="https://arxiv.org/abs/xxx"><img src="https://img.shields.io/static/v1?label=Paper&message=Arxiv&color=red&logo=arxiv"></a> &ensp;
 </div>
 
