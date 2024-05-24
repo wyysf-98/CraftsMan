@@ -107,7 +107,7 @@ cd app
 python gradio_app.py
 ```
 
-## Inference
+## Inference (TBD)
 To generate 3D meshes from images folders via command line, simply run:
 ```bash
 python inference.py --input eval_data --gpu 0
