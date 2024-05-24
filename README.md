@@ -59,7 +59,7 @@ The mesh refinement part is performed on a GTX 3080 GPU.
 Clone this repository.
 
 ```sh
-git clone git@github.com:wyysf-98/CraftsMan.git
+git clone https://github.com/wyysf-98/CraftsMan.git
 ```
 
 Install the required packages.
