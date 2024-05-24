@@ -148,7 +148,7 @@ python launch.py --config .configs/image-to-shape-diffusion/clip-mvrgb-modln-l25
 # ❓常见问题
 问题: 如何获得更好的结果？
 1. 匠心模型将多视图图像作为3D扩散模型的条件。通过我们的实验，与像([Wonder3D](https://github.com/xxlong0/Wonder3D/), [InstantMesh](https://github.com/TencentARC/InstantMesh/tree/main))这样的重建模型相比， 我们的方法对多视图不一致性更加稳健。由于我们依赖图像到MV模型，输入图像的面对方向非常重要，并且总是会导致良好的重建。
-2. 如果您有自己的多视图图像，这将是一个不错的选择来
+2. 如果您有自己的多视图图像，这将是一个不错的选择来直接进行三维推理。
 3. 就像2D扩散模型一样，尝试不同的随机数种子，调整CFG比例或不同的调度器。
 4. 我们将在后期考虑提供一个以文本提示为条件的版本，因此您可以使用一些正面和负面的提示。
 
