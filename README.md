@@ -149,9 +149,9 @@ You can also find the video of mesh refinement part in the video.
 # ❓Common questions
 Q: Tips to get better results.
 1. CraftsMan takes multi-view images as condition of the 3D diffusion model. By our experiments, compared with the reconstruction model like ([Wonder3D](https://github.com/xxlong0/Wonder3D/), [InstantMesh](https://github.com/TencentARC/InstantMesh/tree/main)),
-our method is more robust to multi-view inconsistency. As we rely on the image-to-MV model, the facing direciton of input images is very important and is it always lead to good reconstruction.
-2. If you have your own multi-view images, it would be a good choice to 
-3. Just like the 2D diffusion model, try differnt seeds, adjust the CFG scale or different scheduler. Good Luck.
+our method is more robust to multi-view inconsistency. As we rely on the image-to-MV model, the facing direction of input images is very important and it always leads to good reconstruction.
+2. If you have your own multi-view images, it would be a good choice to use your own images rather than the generated ones
+3. Just like the 2D diffusion model, try different seeds, adjust the CFG scale or different scheduler. Good Luck.
 4. We will provide a version that conditioned on the text prompt, so you can use some positive and negative prompts.
 
 
