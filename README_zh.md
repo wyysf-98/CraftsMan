@@ -8,7 +8,7 @@
 <div align="center">
   <a href="https://craftsman3d.github.io/"><img src="https://img.shields.io/static/v1?label=Project%20Page&message=Github&color=blue&logo=github-pages"></a> &ensp;
   <a href="https://huggingface.co/spaces/wyysf/CraftsMan"><img src="https://img.shields.io/static/v1?label=Demo&message=HF&color=yellow"></a> &ensp;
-  <a href="https://c2894d6e6a2b96acba.gradio.live"><img src="https://img.shields.io/static/v1?label=Gradio&message=HF&color=yellow"></a> &ensp;
+  <a href="https://0aa1e04aafbd0b2892.gradio.live/"><img src="https://img.shields.io/static/v1?label=Gradio&message=HF&color=yellow"></a> &ensp;
   <a href="https://arxiv.org/pdf/2405.14979"><img src="https://img.shields.io/static/v1?label=Paper&message=Arxiv&color=red&logo=arxiv"></a> &ensp;
 </div>
 
@@ -184,6 +184,6 @@ CraftsMan在[AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.en.html)下，因�
     title         = {CraftsMan: High-fidelity Mesh Generation with 3D Native Generation and Interactive Geometry Refiner}, 
     author        = {Weiyu Li and Jiarui Liu and Rui Chen and Yixun Liang and Xuelin Chen and Ping Tan and Xiaoxiao Long},
     year          = {2024},
-    archivePrefix = {arXiv},
+    archivePrefix = {arXiv preprint arXiv:2405.14979},
     primaryClass  = {cs.CG}
     }
