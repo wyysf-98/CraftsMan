@@ -3,8 +3,8 @@ import os
 import sys
 proj_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(proj_dir)
-from third_party.CRM.libs.base_utils import do_resize_content
-from third_party.CRM.imagedream.ldm.util import (
+from .libs.base_utils import do_resize_content
+from .imagedream.ldm.util import (
     instantiate_from_config,
     get_obj_from_str,
 )
@@ -16,9 +16,7 @@ class TwoStagePipeline(object):
     def __init__(
         self,
         stage1_model_config,
-        # stage2_model_config,
         stage1_sampler_config,
-        # stage2_sampler_config,
         device="cuda",
         dtype=torch.float16,
         resize_rate=1,
@@ -34,21 +32,12 @@ class TwoStagePipeline(object):
         self.stage1_model.load_state_dict(torch.load(stage1_model_config.resume, map_location="cpu"), strict=False)
         self.stage1_model = self.stage1_model.to(device).to(dtype)
 
-        # self.stage2_model = instantiate_from_config(OmegaConf.load(stage2_model_config.config).model)
-        # sd = torch.load(stage2_model_config.resume, map_location="cpu")
-        # self.stage2_model.load_state_dict(sd, strict=False)
-        # self.stage2_model = self.stage2_model.to(device).to(dtype)
-
         self.stage1_model.device = device
-        # self.stage2_model.device = device
         self.device = device
         self.dtype = dtype
         self.stage1_sampler = get_obj_from_str(stage1_sampler_config.target)(
             self.stage1_model, device=device, dtype=dtype, **stage1_sampler_config.params
         )
-        # self.stage2_sampler = get_obj_from_str(stage2_sampler_config.target)(
-        #     self.stage2_model, device=device, dtype=dtype, **stage2_sampler_config.params
-        # )
 
     def stage1_sample(
         self,

@@ -324,3 +324,80 @@ class MichelangeloAutoencoder(AutoEncoder):
         logits = self.decoder(queries, latents).squeeze(-1)
 
         return logits
+
+
+
+@craftsman.register("michelangelo-aligned-autoencoder")
+class MichelangeloAlignedAutoencoder(MichelangeloAutoencoder):
+    r"""
+    A VAE model for encoding shapes into latents and decoding latent representations into shapes.
+    """
+    @dataclass
+    class Config(MichelangeloAutoencoder.Config):
+        clip_model_version: Optional[str] = None
+
+    cfg: Config
+
+    def configure(self) -> None:
+        if self.cfg.clip_model_version is not None:
+            self.clip_model: CLIPModel = CLIPModel.from_pretrained(self.cfg.clip_model_version)
+            self.projection = nn.Parameter(torch.empty(self.cfg.width, self.clip_model.projection_dim))
+            self.logit_scale = torch.exp(self.clip_model.logit_scale.data)
+            nn.init.normal_(self.projection, std=self.clip_model.projection_dim ** -0.5)
+        else:
+            self.projection = nn.Parameter(torch.empty(self.cfg.width, 768))
+            nn.init.normal_(self.projection, std=768 ** -0.5)
+
+        self.cfg.num_latents = self.cfg.num_latents + 1
+
+        super().configure()
+
+    def encode(self,
+               surface: torch.FloatTensor,
+               sample_posterior: bool = True):
+        """
+        Args:
+            surface (torch.FloatTensor): [B, N, 3+C]
+            sample_posterior (bool):
+
+        Returns:
+            latents (torch.FloatTensor)
+            posterior (DiagonalGaussianDistribution or None):
+        """
+        assert surface.shape[-1] == 3 + self.cfg.point_feats, f"\
+            Expected {3 + self.cfg.point_feats} channels, got {surface.shape[-1]}"
+        
+        pc, feats = surface[..., :3], surface[..., 3:] # B, n_samples, 3    
+        shape_latents = self.encoder(pc, feats) # B, num_latents, width
+        shape_embeds = shape_latents[:, 0]  # B, width
+        shape_latents = shape_latents[:, 1:] # B, num_latents-1, width
+        kl_embed, posterior = self.encode_kl_embed(shape_latents, sample_posterior)  # B, num_latents, embed_dim
+
+        shape_embeds = shape_embeds @ self.projection
+        return shape_embeds, kl_embed, posterior
+    
+    def forward(self,
+                surface: torch.FloatTensor,
+                queries: torch.FloatTensor,
+                sample_posterior: bool = True):
+        """
+        Args:
+            surface (torch.FloatTensor): [B, N, 3+C]
+            queries (torch.FloatTensor): [B, P, 3]
+            sample_posterior (bool):
+
+        Returns:
+            shape_embeds (torch.FloatTensor): [B, width]
+            latents (torch.FloatTensor): [B, num_latents, embed_dim]
+            posterior (DiagonalGaussianDistribution or None).
+            logits (torch.FloatTensor): [B, P]
+        """
+
+        shape_embeds, kl_embed, posterior = self.encode(surface, sample_posterior=sample_posterior)
+
+        latents = self.decode(kl_embed) # [B, num_latents - 1, width]
+
+        logits = self.query(queries, latents) # [B,]
+
+        return shape_embeds, latents, posterior, logits
+    

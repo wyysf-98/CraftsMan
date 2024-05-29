@@ -32,3 +32,7 @@ trimesh==4.3.2
 wandb==0.16.6
 segment_anything==1.0
 xformers==0.0.19
+spaces==0.28.3
+open_clip_torch==2.7.0
+kiui==0.2.7
+accelerate==0.29.1

@@ -8,7 +8,7 @@
 <div align="center">
   <a href="https://craftsman3d.github.io/"><img src="https://img.shields.io/static/v1?label=Project%20Page&message=Github&color=blue&logo=github-pages"></a> &ensp;
   <a href="https://huggingface.co/spaces/wyysf/CraftsMan"><img src="https://img.shields.io/static/v1?label=Demo&message=HF&color=yellow"></a> &ensp;
-  <a href="https://0aa1e04aafbd0b2892.gradio.live/"><img src="https://img.shields.io/static/v1?label=Gradio&message=HF&color=yellow"></a> &ensp;
+  <a href="https://07dbfa9a62ecc6b3f9.gradio.live/"><img src="https://img.shields.io/static/v1?label=Gradio&message=HF&color=yellow"></a> &ensp;
   <a href="https://arxiv.org/pdf/2405.14979"><img src="https://img.shields.io/static/v1?label=Paper&message=Arxiv&color=red&logo=arxiv"></a> &ensp;
 </div>
 
@@ -16,7 +16,7 @@
 
 
 ## ✨ 总览
-这个仓库包含了我们3D网格生成项目的源代码（训练/推理）、预训练权重和gradio演示代码，你可以在我们的[项目页面](https://craftsman3d.github.io/)找到更多的可视化内容。如果你有高质量的3D数据或其他想法，我们非常欢迎任何形式的合作。
+这个仓库包含了我们3D网格生成项目的源代码（训练/推理）、预训练权重和gradio演示代码，你可以在我们的[项目页面](https://craftsman3d.github.io/)找到更多的可视化内容以及[演示](https://huggingface.co/spaces/wyysf/CraftsMan)试玩生成结果。如果你有高质量的3D数据或其他想法，我们非常欢迎任何形式的合作。
 <details><summary>完整摘要</summary>
 我们提出了一个新颖的3D建模系统，匠心。它可以生成具有多样形状、规则网格拓扑和光滑表面的高保真3D几何，并且值得注意的是，它可以和人工建模流程一样以交互方式细化几何体。尽管3D生成领域取得了显著进展，但现有方法仍然难以应对漫长的优化过程、不规则的网格拓扑、嘈杂的表面以及难以适应用户编辑的问题，因此阻碍了它们在3D建模软件中的广泛采用和实施。我们的工作受到工匠建模的启发，他们通常会首先粗略地勾勒出作品的整体形状，然后详细描绘表面细节。具体来说，我们采用了一个3D原生扩散模型，该模型在从基于潜在集的3D表示学习到的潜在空间上操作，只需几秒钟就可以生成具有规则网格拓扑的粗糙几何体。特别是，这个过程以文本提示或参考图像作为输入，并利用强大的多视图（MV）二维扩散模型生成粗略几何体的多个视图，这些视图被输入到我们的多视角条件3D扩散模型中，用于生成3D几何，显著提高其了鲁棒性和泛化能力。随后，使用基于法线的几何细化器显著增强表面细节。这种细化可以自动执行，或者通过用户提供的编辑以交互方式进行。广泛的实验表明，我们的方法在生成优于现有方法的高质量3D资产方面十分高效。
 </details>
@@ -89,7 +89,8 @@ The latent set diffusion model 在很大程度上基于[Michelangelo](https://gi
 ## 您可以直接使用 wget 下载:
 wegt https://huggingface.co/wyysf/CraftsMan/blob/main/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6/config.yaml
 wegt https://huggingface.co/wyysf/CraftsMan/blob/main/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6/model.ckpt
-
+wegt https://huggingface.co/wyysf/CraftsMan/blob/main/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae/config.yaml
+wegt https://huggingface.co/wyysf/CraftsMan/blob/main/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae/model.ckpt
 ## 或者克隆模型仓库:
 git lfs install
 git clone https://huggingface.co/wyysf/CraftsMan
@@ -102,26 +103,31 @@ git clone https://huggingface.co/wyysf/CraftsMan
 我们提供了不同的文本/图像到多视角图像扩散模型的gradio演示，例如[CRM](https://github.com/thu-ml/CRM), [Wonder3D](https://github.com/xxlong0/Wonder3D/) and [LGM](https://github.com/3DTopia/LGM). 您可以选择不同的模型以获得更好的结果。要在本地机器上运行gradio演示，请简单运行：
 
 ```bash
-cd app
-python gradio_app.py
+python gradio_app.py --model_path ./ckpts/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae
 ```
 
 ## 模型推理
 要通过命令行从图像文件夹生成3D网格，简单运行：
-
 ```bash
-python inference.py --input eval_data --gpu 0
+python inference.py --input eval_data --device 0
+```
+
+通过下面的代码，可以修改使用的多视角图片推理模型：
+```bash
+python inference.py --input eval_data --mv_model 'ImageDream' --device 0  # support ['CRM', 'ImageDream', 'Wonder3D']
 ```
 
 我们默认使用 [rembg](https://github.com/danielgatis/rembg) 来通过前景对象分割。如果输入图像已经有alpha蒙版，请指定no_rembg标志符：
 ```bash
-python inference.py --input eval_data --gpu 0 --no_rembg
+python inference.py --input 'apps/examples/1_cute_girl.webp' --device 0 --no_rembg
 ```
 
 如果您有其他视图的图像（左，右，背面），您可以通过下面指令指定图像：
 ```bash
-python inference.py --input eval_data --gpu 0 --left_view 'left.png'
+python inference.py --input 'apps/examples/front.webp' --device 0 --right_view 'apps/examples/right.webp'
 ```
+
+更多推理配置，请参考 `inference.py`
 
 ## 从头开始训练
 我们提供了我们的训练代码以方便未来的研究。我们将在接下来的几天内提供少量的数据样本。

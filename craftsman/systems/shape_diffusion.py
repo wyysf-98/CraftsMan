@@ -201,14 +201,14 @@ class ShapeDiffusionSystem(BaseSystem):
         elif self.noise_scheduler.config.prediction_type == "v_prediction":
             target = self.noise_scheduler.get_velocity(latents, noise, timesteps)
         else:
-            raise NotImplementedError(f"Prediction Type: {self.noise_scheduler.prediction_type} not yet supported.")
+            raise ValueError(f"Prediction Type: {self.noise_scheduler.prediction_type} not supported.")
         if self.cfg.snr_gamma == 0:
             if self.cfg.loss.loss_type == "l1":
                 loss = F.l1_loss(noise_pred, target, reduction="mean")
             elif self.cfg.loss.loss_type in ["mse", "l2"]:
                 loss = F.mse_loss(noise_pred, target, reduction="mean")
             else:
-                raise NotImplementedError(f"Loss Type: {self.cfg.loss.loss_type} not yet supported.")
+                raise ValueError(f"Loss Type: {self.cfg.loss.loss_type} not supported.")
         else:
             # Compute loss-weights as per Section 3.4 of https://arxiv.org/abs/2303.09556.
             # Since we predict the noise instead of x_0, the original formulation is slightly changed.
@@ -227,7 +227,7 @@ class ShapeDiffusionSystem(BaseSystem):
             elif self.cfg.loss.loss_type in ["mse", "l2"]:
                 loss = F.mse_loss(noise_pred, target, reduction="none")
             else:
-                raise NotImplementedError(f"Loss Type: {self.cfg.loss.loss_type} not yet supported.")
+                raise ValueError(f"Loss Type: {self.cfg.loss.loss_type} not supported.")
             loss = loss.mean(dim=list(range(1, len(loss.shape)))) * mse_loss_weights
             loss = loss.mean()
 

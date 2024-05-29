@@ -95,9 +95,9 @@ def get_obj_from_str(string, reload=False):
         importlib.reload(module_imp)
         
     if 'imagedream' in module:
-        module = 'third_party.CRM.'+module
+        module = 'apps.third_party.CRM.'+module
     if 'lib' in module:
-        module = 'third_party.CRM.'+module
+        module = 'apps.third_party.CRM.'+module
     return getattr(importlib.import_module(module, package=None), cls)
 
 

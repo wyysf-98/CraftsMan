@@ -9,7 +9,7 @@
 <div align="center">
   <a href="https://craftsman3d.github.io/"><img src="https://img.shields.io/static/v1?label=Project%20Page&message=Github&color=blue&logo=github-pages"></a> &ensp;
   <a href="https://huggingface.co/spaces/wyysf/CraftsMan"><img src="https://img.shields.io/static/v1?label=Demo&message=HF&color=yellow"></a> &ensp;
-  <a href="https://0aa1e04aafbd0b2892.gradio.live/"><img src="https://img.shields.io/static/v1?label=Gradio&message=HF&color=yellow"></a> &ensp;
+  <a href="https://07dbfa9a62ecc6b3f9.gradio.live/"><img src="https://img.shields.io/static/v1?label=Gradio&message=HF&color=yellow"></a> &ensp;
   <a href="https://arxiv.org/pdf/2405.14979"><img src="https://img.shields.io/static/v1?label=Paper&message=Arxiv&color=red&logo=arxiv"></a> &ensp;
 </div>
 
@@ -20,7 +20,7 @@
 
 ## ✨ Overview
 
-This repo contains source code (training / inference) of 3D diffusion model, pretrained weights and gradio demo code of our 3D mesh generation project, you can find more visualizations on our [project page](https://craftsman3d.github.io/). If you have high-quality 3D data or some other ideas, we very much welcome any form of cooperation.
+This repo contains source code (training / inference) of 3D diffusion model, pretrained weights and gradio demo code of our 3D mesh generation project, you can find more visualizations on our [project page](https://craftsman3d.github.io/) and try our [demo](https://huggingface.co/spaces/wyysf/CraftsMan). If you have high-quality 3D data or some other ideas, we very much welcome any form of cooperation.
 <details><summary>Full abstract here</summary>
 We present a novel generative 3D modeling system, coined CraftsMan, which can generate high-fidelity 3D geometries with highly varied shapes, regular mesh topologies, and detailed surfaces, and, notably, allows for refining the geometry in an interactive manner. Despite the significant advancements in 3D generation, existing methods still struggle with lengthy optimization processes, irregular mesh topologies, noisy surfaces, and difficulties in accommodating user edits, consequently impeding their widespread adoption and implentation in 3D modeling softwares. Our work is inspired by the craftsman, who usually roughs out the holistic figure of the work first and elaborate the surface details subsequently. Specifically, we employ a 3D native diffusion model, which operates on latent space learned from latent set-based 3D representations, to generate coarse geometries with regular mesh topology in seconds. In particular, this process takes as input a text prompt or a reference image, and leverages a powerful multi-view (MV) diffusion model to generates multiple views of the coarse geometry, which are fed into our MV-conditioned 3D diffusion model for generating the 3D geometry, significantly improving robustness and generalizability. Following that, a normal-based geometry refiner is used to significantly enhance the surface details. This refinement can be performed automatically, or interactively with user-supplied edits. Extensive experiments demonstrate that our method achieves high e￿cacy in producing superior quality 3D assets compared to existing methods.
 </details>
@@ -93,38 +93,45 @@ We will consider open source the further models according to the real situation.
 ## you can just get the model using wget:
 wegt https://huggingface.co/wyysf/CraftsMan/blob/main/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6/config.yaml
 wegt https://huggingface.co/wyysf/CraftsMan/blob/main/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6/model.ckpt
+wegt https://huggingface.co/wyysf/CraftsMan/blob/main/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae/config.yaml
+wegt https://huggingface.co/wyysf/CraftsMan/blob/main/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae/model.ckpt
 
 ## or you can git clone the repo:
 git lfs install
 git clone https://huggingface.co/wyysf/CraftsMan
 
 ```
-If you download the models using wget, you should manually put them under the `ckpts/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6` directory.
+If you download the models using wget, you should manually put them under the `ckpts/image-to-shape-diffusion` directory.
 
 ## Gradio demo
 We provide gradio demos with different text/image-to-MV diffusion models, such as [CRM](https://github.com/thu-ml/CRM), [Wonder3D](https://github.com/xxlong0/Wonder3D/) and [LGM](https://github.com/3DTopia/LGM). You can select different models to get better results. To run a gradio demo in your local machine, simply run:
 
 ```bash
-cd app
-python gradio_app.py
+python gradio_app.py --model_path ./ckpts/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae
 ```
 
 ## Inference (TBD)
 To generate 3D meshes from images folders via command line, simply run:
 ```bash
-python inference.py --input eval_data --gpu 0
+python inference.py --input eval_data --device 0
+```
+
+You can modify the used mv-images model by:
+```bash
+python inference.py --input eval_data --mv_model 'ImageDream' --device 0  # support ['CRM', 'ImageDream', 'Wonder3D']
 ```
 
 We use [rembg](https://github.com/danielgatis/rembg) to segment the foreground object by default. If the input image already has an alpha mask, please specify the no_rembg flag:
 ```bash
-python inference.py --input eval_data --gpu 0 --no_rembg
+python inference.py --input 'apps/examples/1_cute_girl.webp' --device 0 --no_rembg
 ```
 
 If you have images from other views (left, right, bacj), you can specify images by:
 ```bash
-python inference.py --input eval_data --gpu 0 --left_view 'left.png'
+python inference.py --input 'apps/examples/front.webp' --device 0 --right_view 'apps/examples/right.webp'
 ```
 
+For more configs, please refer to the `inference.py`.
 
 ## Train from scratch
 We provide our training code to facilitate future research. And we will provide a data sample in the nexts days.

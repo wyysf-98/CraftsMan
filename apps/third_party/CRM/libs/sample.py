@@ -6,8 +6,8 @@ from imagedream.ldm.util import set_seed, add_random_background
 # import sys
 # proj_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # sys.path.append(proj_dir)
-from third_party.CRM.libs.base_utils import do_resize_content
-from imagedream.ldm.models.diffusion.ddim import DDIMSampler
+from .base_utils import do_resize_content
+from ..imagedream.ldm.models.diffusion.ddim import DDIMSampler
 from torchvision import transforms as T
 
 
