@@ -1,3 +1,4 @@
+[中文版](tutorial_zh.md)
 ## Best Practice of CraftsMan3D :notebook:
 
 ### Overview
@@ -70,8 +71,10 @@ You can only generate the mesh by this button, please note that you have to gene
 ### Advanced Options (2D)
 
 #### Backgroud Choice
-For the CRM, it is reconmand to use the gray background color and we set the background color mannually.
-For the rest MV models, the white background is ok for most situation.
+
+`Alpha as Mask`: use the alpha channel of the image as the mask.
+`Auto Remove Background`: use different methods to automatically remove the background.
+`Original Image`: use the original image.
 
 #### Backgroud Remove Type
 We provide two ways [rembg](https://github.com/danielgatis/rembg) and [sam](https://github.com/facebookresearch/segment-anything) to remove the background color. SAM may require more time for processing but provides a higher accuracy in foreground segmentation. If you encounter issues with obtaining the correct foreground using the default rembg, we recommend trying SAM.
