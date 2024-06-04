@@ -63,10 +63,11 @@ By default, the system utilizes a seed value of 0, indicating that a random seed
 ### Advanced Options
 
 #### Only Generate 2D
-You can only generate the multi-view images by this button.
+You can only generate multi-view images with this button.
 
 #### Only Generate 3D
-You can only generate the mesh by this button, please note that you have to generate or upload the multi-view images first.
+You can only generate the mesh by this button, please note that you have to generate or upload the multi-view images first.*
+**This button is useful when you want to use your uploaded multi-view images.**
 
 ### Advanced Options (2D)
 
