@@ -109,7 +109,7 @@ We provide gradio demos with different text/image-to-MV diffusion models, such a
 python gradio_app.py --model_path ./ckpts/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae
 ```
 
-## Inference (TBD)
+## Inference
 To generate 3D meshes from images folders via command line, simply run:
 ```bash
 python inference.py --input eval_data --device 0
@@ -169,9 +169,8 @@ our method is more robust to multi-view inconsistency. As we rely on the image-t
 - [x] Training code
 - [x] Gradio & Hugging Face demo
 - [x] Model zoo, we will release more ckpt in the future
-- [ ] Environment setup
+- [x] Environment setup
 - [ ] Data sample
-- [ ] Google Colab example
 - [ ] Code for mesh refine
 
 
