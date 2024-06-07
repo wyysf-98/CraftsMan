@@ -5,7 +5,7 @@ seed: 0
 
 data_type: "objaverse-datamodule"
 data:
-  root_dir: "data/objaverse_clean/cap3d_high_quality_170k_images"
+  root_dir: "data/sample/cap3d_high_quality_170k_images"
   data_type: "occupancy" 
   n_samples: 4096
   noise_sigma: 0.
@@ -15,7 +15,7 @@ data:
   n_supervision: 4096
 
   load_image: True              # whether to load images 
-  image_data_path: data/objaverse_clean/raw_data/images/cap3d_high_quality_170k
+  image_data_path: data/sample/raw_data/images/cap3d_high_quality_170k
   image_type: "mvrgb"           # rgb, normal, mvrgb, mvnormal
   idx: [0, 4, 8, 12, 16] 
   n_views: 4
@@ -35,8 +35,6 @@ system:
 
   shape_model_type: "michelangelo-autoencoder"
   shape_model:
-    # pretrained_model_name_or_path: ./ckpts/3DNativeGeneration/michelangelo-aligned-autoencoder-l256-e64-ne8-nd16.ckpt
-    pretrained_model_name_or_path: "./outputs/image-to-shape-diffusion_bak/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6/michelangelo-autoencoder+n4096+noise0.0+pfeat3+normembFalse+lr5e-05+qkvbiasFalse+nfreq8+ln_postTrue/ckpts/last.ckpt"
     num_latents: 256
     embed_dim: 64
     point_feats: 3   # xyz + normal
@@ -55,7 +53,7 @@ system:
 
   condition_model_type: "clip-embedder"
   condition_model:
-    pretrained_model_name_or_path: "./ckpts/pretrained_weights/huggingface/hub/models--openai--clip-vit-large-patch14/snapshots/8d052a0f05efbaefbc9e8786ba291cfdf93e5bff"
+    pretrained_model_name_or_path: "openai/clip-vit-large-patch14"
     encode_camera: true
     camera_embeds_dim: 32 # 16 * 2[sin, cos]
     n_views: ${data.n_views}
@@ -66,8 +64,6 @@ system:
 
   denoiser_model_type: "simple-denoiser"
   denoiser_model:
-    # pretrained_model_name_or_path: "./ckpts/CraftsMan/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6.pth"
-    pretrained_model_name_or_path: "./ckpts/CraftsMan/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-It500000.pth"
     input_channels: ${system.shape_model.embed_dim}
     output_channels:  ${system.shape_model.embed_dim}
     n_ctx: ${system.shape_model.num_latents}

@@ -5,7 +5,7 @@ seed: 0
 
 data_type: "objaverse-datamodule"
 data:
-  root_dir: "data/objaverse_clean/sdf_100k"
+  root_dir: "data/sample/sdf_100k"
   data_type: "sdf" 
   n_samples: 4096
   noise_sigma: 0.

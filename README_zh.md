@@ -129,7 +129,8 @@ python inference.py --input 'apps/examples/front.webp' --device 0 --right_view '
 更多推理配置，请参考 `inference.py`
 
 ## 从头开始训练
-我们提供了我们的训练代码以方便未来的研究。我们将在接下来的几天内提供少量的数据样本。
+我们提供了我们的训练代码以方便未来的研究。我们已经提供数据样本。
+对于occupancy数据，我们推荐直接从[Objaverse-MIX](https://huggingface.co/datasets/BAAI/Objaverse-MIX/tree/main)下载，感谢该工作的分享。
 有关更多的训练细节和配置，请参考configs文件夹。
 
 ```bash
