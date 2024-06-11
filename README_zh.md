@@ -165,9 +165,8 @@ python launch.py --config .configs/image-to-shape-diffusion/clip-mvrgb-modln-l25
 - [x]  训练代码
 - [x]  Gradio & Hugging Face演示
 - [x]  模型库，我们将在未来发布更多的ckpt
-- [ ]  环境设置
-- [ ]  数据样本
-- [ ]  Google Colab示例
+- [x]  环境设置
+- [x]  数据样本
 - [ ]  网格细化代码
 
 
