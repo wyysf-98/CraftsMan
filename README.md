@@ -171,7 +171,7 @@ our method is more robust to multi-view inconsistency. As we rely on the image-t
 - [x] Gradio & Hugging Face demo
 - [x] Model zoo, we will release more ckpt in the future
 - [x] Environment setup
-- [ ] Data sample
+- [x] Data sample
 - [ ] Code for mesh refine
 
 
