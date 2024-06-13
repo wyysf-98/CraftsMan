@@ -5,8 +5,8 @@ seed: 0
 
 data_type: "objaverse-datamodule"
 data:
-  root_dir: "data/sample/sdf_100k"
-  data_type: "sdf" 
+  root_dir: "data/sample/objaverse-mix"
+  data_type: "occupancy" 
   n_samples: 4096
   noise_sigma: 0.
   rotate: False
