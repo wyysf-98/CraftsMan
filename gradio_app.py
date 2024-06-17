@@ -224,7 +224,7 @@ if __name__=="__main__":
         custom_pipeline='flamehaze1115/wonder3d-pipeline',
         torch_dtype=torch.float16
     )
-    enable xformers
+    # enable xformers
     wonder3d_pipeline.unet.enable_xformers_memory_efficient_attention()
     wonder3d_pipeline.to(device)
 
