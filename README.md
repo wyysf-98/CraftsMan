@@ -112,22 +112,22 @@ python gradio_app.py --model_path ./ckpts/image-to-shape-diffusion/clip-mvrgb-mo
 ## Inference
 To generate 3D meshes from images folders via command line, simply run:
 ```bash
-python inference.py --input eval_data --device 0
+python inference.py --input eval_data --device 0 --model ./ckpts/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae
 ```
 
 You can modify the used mv-images model by:
 ```bash
-python inference.py --input eval_data --mv_model 'ImageDream' --device 0  # support ['CRM', 'ImageDream', 'Wonder3D']
+python inference.py --input eval_data --mv_model 'ImageDream' --device 0  # support ['CRM', 'ImageDream', 'Wonder3D'] --model ./ckpts/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae
 ```
 
 We use [rembg](https://github.com/danielgatis/rembg) to segment the foreground object by default. If the input image already has an alpha mask, please specify the no_rembg flag:
 ```bash
-python inference.py --input 'apps/examples/1_cute_girl.webp' --device 0 --no_rembg
+python inference.py --input 'apps/examples/1_cute_girl.webp' --device 0 --no_rembg --model ./ckpts/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae
 ```
 
 If you have images from other views (left, right, bacj), you can specify images by:
 ```bash
-python inference.py --input 'apps/examples/front.webp' --device 0 --right_view 'apps/examples/right.webp'
+python inference.py --input 'apps/examples/front.webp' --device 0 --right_view 'apps/examples/right.webp' --model ./ckpts/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae
 ```
 
 For more configs, please refer to the `inference.py`.
