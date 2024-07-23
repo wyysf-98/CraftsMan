@@ -14,7 +14,7 @@ from huggingface_hub import hf_hub_download
 from apps.utils import load_model, RMBG
 from apps.third_party.LGM.pipeline_mvdream import MVDreamPipeline
 from apps.third_party.CRM.pipelines import TwoStagePipeline
-from apps.third_party.Wonder3D.mvdiffusion.pipelines.pipeline_mvdiffusion_image import MVDiffusionImagePipeline
+# from apps.third_party.Wonder3D.mvdiffusion.pipelines.pipeline_mvdiffusion_image import MVDiffusionImagePipeline
 
 model = None
 generator = None
@@ -146,19 +146,19 @@ if __name__=="__main__":
     parser.add_argument("--model", type=str, default="", help="Path to the image-to-shape diffusion model",)
     parser.add_argument("--mv_model", type=str, default="CRM", help="Path to the multi-view images model",)
     ############## inference ##############
-    parser.add_argument("--seed", type=int, default=4, help="Random seed for generating multi-view images",)
+    parser.add_argument("--seed", type=int, default=0, help="Random seed for generating multi-view images",)
     parser.add_argument("--guidance_scale_2D", type=float, default=3, help="Guidance scale for generating multi-view images",)
-    parser.add_argument("--step_2D", type=int, default=50, help="Number of steps for generating multi-view images",)
-    parser.add_argument("--remesh", type=bool, default=False, help="Remesh the output mesh",)
+    parser.add_argument("--step_2D", type=int, default=30, help="Number of steps for generating multi-view images",)
+    parser.add_argument("--remesh", action="store_true", help="Remesh the output mesh",)
     parser.add_argument("--target_face_count", type=int, default=2000, help="Target face count for remeshing",)
     parser.add_argument("--guidance_scale_3D", type=float, default=3, help="Guidance scale for 3D reconstruction",)
     parser.add_argument("--step_3D", type=int, default=50, help="Number of steps for 3D reconstruction",)
     parser.add_argument("--octree_depth", type=int, default=7, help="Octree depth for 3D reconstruction",)
     ############## data preprocess ##############
-    parser.add_argument("--no_rmbg", type=bool, default=False, help="Do NOT remove the background",)
+    parser.add_argument("--no_rmbg", action="store_true", help="Do NOT remove the background",)
     parser.add_argument("--rm_type", type=str, default="rembg", choices=["rembg", "sam"], help="Type of background removal",)
     parser.add_argument("--bkgd_type", type=str, default="Remove", choices=["Alpha as mask", "Remove", "Original"], help="Type of background",)
-    parser.add_argument("--bkgd_color", type=str, default="[127,127,127,255]", help="Background color",)
+    parser.add_argument("--bkgd_color", type=str, default="[255,255,255,255]", help="Background color",)
     parser.add_argument("--fg_ratio", type=float, default=1.0, help="Foreground ratio",)
     parser.add_argument("--front_view", type=str, default="", help="Front view of the object",)
     parser.add_argument("--right_view", type=str, default="", help="Right view of the object",)
@@ -228,7 +228,7 @@ if __name__=="__main__":
         # generate the multi-view images
         image = Image.open(image_file)
         if not args.no_rmbg:
-            image = rmbg.run(args.rm_type, image, args.fg_ratio, args.bkgd_type, args.bkgd_color)
+            image = rmbg.run(args.rm_type, image, args.fg_ratio, args.bkgd_type, tuple(json.loads(args.bkgd_color)))
         mvimages = gen_mvimg(
             args.mv_model, 
             image, 
@@ -244,6 +244,7 @@ if __name__=="__main__":
             mvimg.save(os.path.join(args.output, f"{os.path.basename(image_file).split('.')[0]}_{i}.png"))
             
         # manually set the view images
+        mvimages = list(mvimages)
         if args.front_view != "":
             view_front = Image.open(args.front_view)
             mvimages[0] = view_front

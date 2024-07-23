@@ -49,8 +49,9 @@ def load_model(
 
 class RMBG(object):
     def __init__(self, device):
-        sam = sam_model_registry["vit_h"](checkpoint=f"{parent_dir}/ckpts/SAM/sam_vit_h_4b8939.pth").to(device)
-        self.predictor = SamPredictor(sam)
+        pass
+        # sam = sam_model_registry["vit_h"](checkpoint=f"{parent_dir}/ckpts/SAM/sam_vit_h_4b8939.pth").to(device)
+        # self.predictor = SamPredictor(sam)
         
     def rmbg_sam(self, input_image):
         def _sam_segment(predictor, input_image, *bbox_coords):

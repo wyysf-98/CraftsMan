@@ -120,9 +120,9 @@ You can modify the used mv-images model by:
 python inference.py --input eval_data --mv_model 'ImageDream' --device 0  # support ['CRM', 'ImageDream', 'Wonder3D'] --model ./ckpts/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae
 ```
 
-We use [rembg](https://github.com/danielgatis/rembg) to segment the foreground object by default. If the input image already has an alpha mask, please specify the no_rembg flag:
+We use [rembg](https://github.com/danielgatis/rembg) to segment the foreground object by default. If the input image already has an alpha mask, please specify the no_rmbg flag:
 ```bash
-python inference.py --input 'apps/examples/1_cute_girl.webp' --device 0 --no_rembg --model ./ckpts/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae
+python inference.py --input 'apps/examples/1_cute_girl.webp' --device 0 --no_rmbg --model ./ckpts/image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae
 ```
 
 If you have images from other views (left, right, bacj), you can specify images by:
