@@ -8,10 +8,13 @@ from glob import glob
 from PIL import Image
 from omegaconf import OmegaConf
 from huggingface_hub import hf_hub_download
+from einops import rearrange
 from typing import Dict, Tuple, List
 
 from apps.utils import load_model, preprocess_image
 from apps.third_party.CRM.pipelines import TwoStagePipeline
+from apps.third_party.Era3D.pipelines.pipeline_mvdiffusion_unclip import StableUnCLIPImg2ImgPipeline
+from apps.third_party.Era3D.data.single_image_dataset import SingleImageDataset
 
 model = None
 generator = None
@@ -19,25 +22,65 @@ generator = None
 sys.path.append(f"apps/third_party/CRM")
 crm_pipeline = None
 
+sys.path.append(f"apps/third_party/Era3D")
+era3d_pipeline = None
+
 def gen_mvimg(
+    mvimg_model,
     image,
     seed,
     guidance_scale,
     step,
+    device,
     ):
+    global generator
     if seed == 0:
         seed = np.random.randint(1, 65535)
+        generator = torch.Generator(device)
+        generator.manual_seed(seed)
 
-    global crm_pipeline
-    crm_pipeline.set_seed(seed)
-    background = Image.new("RGBA", image.size, (127, 127, 127)) # force background to be gray 
-    image = Image.alpha_composite(background, image)
-    mv_imgs = crm_pipeline(
-        image,
-        scale=guidance_scale,
-        step=step
-    )["stage1_images"]
-    return mv_imgs[5], mv_imgs[3], mv_imgs[2], mv_imgs[0]
+    if mvimg_model == "CRM":
+        global crm_pipeline
+        crm_pipeline.set_seed(seed)
+        background = Image.new("RGBA", image.size, (127, 127, 127)) # force background to be gray
+        image = Image.alpha_composite(background, image)
+        mv_imgs = crm_pipeline(
+            image,
+            scale=guidance_scale,
+            step=step
+        )["stage1_images"]
+        return mv_imgs[5], mv_imgs[3], mv_imgs[2], mv_imgs[0]
+
+    elif mvimg_model == "Era3D":
+        global era3d_pipeline
+        era3d_pipeline.to(device)
+        era3d_pipeline.unet.enable_xformers_memory_efficient_attention()
+        era3d_pipeline.set_progress_bar_config(disable=True)
+
+        crop_size = 420
+        batch = SingleImageDataset(root_dir='', num_views=6, img_wh=[512, 512], bg_color='white',
+            crop_size=crop_size, single_image=image, prompt_embeds_path='apps/third_party/Era3D/data/fixed_prompt_embeds_6view')[0]
+        imgs_in = torch.cat([batch['imgs_in']]*2, dim=0)
+        imgs_in = rearrange(imgs_in, "B Nv C H W -> (B Nv) C H W")# (B*Nv, 3, H, W)
+
+        normal_prompt_embeddings, clr_prompt_embeddings = batch['normal_prompt_embeddings'], batch['color_prompt_embeddings']
+        prompt_embeddings = torch.cat([normal_prompt_embeddings, clr_prompt_embeddings], dim=0)
+        prompt_embeddings = rearrange(prompt_embeddings, "B Nv N C -> (B Nv) N C")
+
+        imgs_in = imgs_in.to(dtype=torch.float16)
+        prompt_embeddings = prompt_embeddings.to(dtype=torch.float16)
+
+        mv_imgs = era3d_pipeline(
+            imgs_in,
+            None,
+            prompt_embeds=prompt_embeddings,
+            generator=generator,
+            guidance_scale=guidance_scale,
+            num_inference_steps=step,
+            num_images_per_prompt=1,
+            **{'eta': 1.0}
+        ).images
+        return mv_imgs[6], mv_imgs[8], mv_imgs[9], mv_imgs[10]
 
 def image2mesh(view_front: np.ndarray,
                view_right: np.ndarray,
@@ -91,14 +134,15 @@ def image2mesh(view_front: np.ndarray,
 
     return filepath
 
-def main(input_path:str, outputs_folder:str, weights_folder:str, views:Dict[str, str]=None,
+def main(input_path:str, outputs_folder:str, weights_folder:str, mv_model:str="CRM",
+         views:Dict[str, str]=None,
          seed:int=0, device:int=0,
          guidance_scale_2D:float=3, step_2D:int=50,
          guidance_scale_3D:float=3, step_3D:int=50, octree_depth:int=7,
          remesh:bool=False, target_face_count:int=2000,
          ) -> Tuple[str, List[str]]:
 
-    global model, generator, crm_pipeline
+    global model, generator, crm_pipeline, era3d_pipeline
 
     device = torch.device(f"cuda:{device}" if torch.cuda.is_available() else "cpu")
     os.makedirs(outputs_folder, exist_ok=True)
@@ -110,7 +154,7 @@ def main(input_path:str, outputs_folder:str, weights_folder:str, views:Dict[str,
     if not generator: generator = torch.Generator(device)
 
     # load the multi-view images model
-    if not crm_pipeline:
+    if mv_model == "CRM" and not crm_pipeline:
         stage1_config = OmegaConf.load(f"apps/third_party/CRM/configs/nf7_v3_SNR_rd_size_stroke.yaml").config
         stage1_sampler_config = stage1_config.sampler
         stage1_model_config = stage1_config.models
@@ -122,6 +166,11 @@ def main(input_path:str, outputs_folder:str, weights_folder:str, views:Dict[str,
                             device=device,
                             dtype=torch.float16
                         )
+    elif mv_model == "Era3D" and not era3d_pipeline:
+        era3d_pipeline = StableUnCLIPImg2ImgPipeline.from_pretrained(
+            'pengHTYX/MacLab-Era3D-512-6view',
+            dtype=torch.float16,
+        )
 
     # read the input images
     if os.path.isdir(input_path):
@@ -135,10 +184,12 @@ def main(input_path:str, outputs_folder:str, weights_folder:str, views:Dict[str,
         image = Image.open(image_file)
         image = preprocess_image(image, foreground_ratio=1.0)
         mvimages = gen_mvimg(
+            mv_model,
             image,
             seed,
             guidance_scale_2D,
             step_2D,
+            device,
         )
         mvimg_paths = []
         for i, mvimg in enumerate(mvimages):
@@ -187,6 +238,7 @@ if __name__=="__main__":
     parser.add_argument("--output", type=str, default="./eval_outputs", help="Path to the inference results",)
     ############## model and mv model ##############
     parser.add_argument("--model", type=str, default="", help="Path to the image-to-shape diffusion model",)
+    parser.add_argument("--mv_model", type=str, default="Era3D", choices=["CRM", "Era3D"], help="Type of multi-view images model",)
     ############## inference ##############
     parser.add_argument("--seed", type=int, default=4, help="Random seed for generating multi-view images",)
     parser.add_argument("--guidance_scale_2D", type=float, default=3, help="Guidance scale for generating multi-view images",)
@@ -214,9 +266,8 @@ if __name__=="__main__":
     if args.left_view != "":
         views["left"] = args.left_view
 
-    main(args.input, args.output, args.model, views=views,
+    main(args.input, args.output, args.model, mv_model=args.mv_model, views=views,
          seed=args.seed, device=args.device,
          guidance_scale_2D=args.guidance_scale_2D, step_2D=args.step_2D,
          guidance_scale_3D=args.guidance_scale_3D, step_3D=args.step_3D, octree_depth=args.octree_depth,
          remesh=args.remesh, target_face_count=args.target_face_count)
- 
