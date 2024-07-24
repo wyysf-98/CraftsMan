@@ -1,20 +1,17 @@
 import argparse
 import os
 import sys
-import json
 import trimesh
 import torch
 import numpy as np
 from glob import glob
 from PIL import Image
 from omegaconf import OmegaConf
-from collections import OrderedDict
 from huggingface_hub import hf_hub_download
+from typing import Dict, Tuple, List
 
-from apps.utils import load_model, RMBG
-from apps.third_party.LGM.pipeline_mvdream import MVDreamPipeline
+from apps.utils import load_model, preprocess_image
 from apps.third_party.CRM.pipelines import TwoStagePipeline
-# from apps.third_party.Wonder3D.mvdiffusion.pipelines.pipeline_mvdiffusion_image import MVDiffusionImagePipeline
 
 model = None
 generator = None
@@ -22,73 +19,29 @@ generator = None
 sys.path.append(f"apps/third_party/CRM")
 crm_pipeline = None
 
-sys.path.append(f"apps/third_party/LGM")
-imgaedream_pipeline = None
-
-sys.path.append(f"apps/third_party/Wonder3D")
-wonder3d_pipeline = None
-
 def gen_mvimg(
-    mvimg_model, 
-    image, 
-    seed, 
-    guidance_scale, 
-    step, 
-    text, 
-    neg_text, 
-    elevation, 
-    backgroud_color
-):
+    image,
+    seed,
+    guidance_scale,
+    step,
+    ):
     if seed == 0:
         seed = np.random.randint(1, 65535)
 
-    if mvimg_model == "CRM":
-        global crm_pipeline
-        crm_pipeline.set_seed(seed)
-        background = Image.new("RGBA", image.size, (127, 127, 127)) # force background to be gray 
-        image = Image.alpha_composite(background, image)
-        mv_imgs = crm_pipeline(
-            image, 
-            scale=guidance_scale, 
-            step=step
-        )["stage1_images"]
-        return mv_imgs[5], mv_imgs[3], mv_imgs[2], mv_imgs[0]
-    
-    elif mvimg_model == "ImageDream":
-        global imagedream_pipeline, generator
-        background = Image.new("RGBA", image.size, backgroud_color)
-        image = Image.alpha_composite(background, image)
+    global crm_pipeline
+    crm_pipeline.set_seed(seed)
+    background = Image.new("RGBA", image.size, (127, 127, 127)) # force background to be gray 
+    image = Image.alpha_composite(background, image)
+    mv_imgs = crm_pipeline(
+        image,
+        scale=guidance_scale,
+        step=step
+    )["stage1_images"]
+    return mv_imgs[5], mv_imgs[3], mv_imgs[2], mv_imgs[0]
 
-        image = np.array(image).astype(np.float32) / 255.0
-        image = image[..., :3] * image[..., 3:4] + (1 - image[..., 3:4])
-        mv_imgs = imagedream_pipeline(
-            text, 
-            image, 
-            negative_prompt=neg_text, 
-            guidance_scale=guidance_scale,  
-            num_inference_steps=step, 
-            elevation=elevation,
-            generator=generator.manual_seed(seed),
-        )
-        return mv_imgs[1], mv_imgs[2], mv_imgs[3], mv_imgs[0]
-    
-    elif mvimg_model == "Wonder3D":
-        global wonder3d_pipeline
-        background = Image.new("RGBA", image.size, backgroud_color)
-        image = Image.alpha_composite(background, image)
-
-        image = Image.fromarray(np.array(image).astype(np.uint8)[..., :3]).resize((256, 256))
-        mv_imgs = wonder3d_pipeline(
-            image, 
-            guidance_scale=guidance_scale, 
-            num_inference_steps=step,
-            generator=generator.manual_seed(seed),
-        ).images
-        return mv_imgs[0], mv_imgs[2], mv_imgs[4], mv_imgs[5]
-
-def image2mesh(view_front: np.ndarray, 
-               view_right: np.ndarray, 
-               view_back: np.ndarray, 
+def image2mesh(view_front: np.ndarray,
+               view_right: np.ndarray,
+               view_back: np.ndarray,
                view_left: np.ndarray,
                filepath: str,
                remesh: bool = False,
@@ -98,12 +51,12 @@ def image2mesh(view_front: np.ndarray,
                step: int = 50,
                seed: int = 4,
                octree_depth: int = 7):
-    
+
     sample_inputs = {
         "mvimages": [[
-            Image.fromarray(view_front), 
-            Image.fromarray(view_right), 
-            Image.fromarray(view_back), 
+            Image.fromarray(view_front),
+            Image.fromarray(view_right),
+            Image.fromarray(view_back),
             Image.fromarray(view_left)
         ]]
     }
@@ -117,7 +70,7 @@ def image2mesh(view_front: np.ndarray,
         steps=step,
         seed=seed
     )[0]
-    
+
     # decode the latents to mesh
     box_v = 1.1
     mesh_outputs, _ = model.shape_model.extract_geometry(
@@ -135,53 +88,29 @@ def image2mesh(view_front: np.ndarray,
         command = f"apps/third_party/InstantMeshes {filepath} -f {target_face_count} -o {remeshed_filepath}"
         os.system(command)
         filepath = remeshed_filepath
-    
+
     return filepath
 
-if __name__=="__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--input", type=str, default="./eval_data", help="Path to the input data",)
-    parser.add_argument("--output", type=str, default="./eval_outputs", help="Path to the inference results",)
-    ############## model and mv model ##############
-    parser.add_argument("--model", type=str, default="", help="Path to the image-to-shape diffusion model",)
-    parser.add_argument("--mv_model", type=str, default="CRM", help="Path to the multi-view images model",)
-    ############## inference ##############
-    parser.add_argument("--seed", type=int, default=0, help="Random seed for generating multi-view images",)
-    parser.add_argument("--guidance_scale_2D", type=float, default=3, help="Guidance scale for generating multi-view images",)
-    parser.add_argument("--step_2D", type=int, default=30, help="Number of steps for generating multi-view images",)
-    parser.add_argument("--remesh", action="store_true", help="Remesh the output mesh",)
-    parser.add_argument("--target_face_count", type=int, default=2000, help="Target face count for remeshing",)
-    parser.add_argument("--guidance_scale_3D", type=float, default=3, help="Guidance scale for 3D reconstruction",)
-    parser.add_argument("--step_3D", type=int, default=50, help="Number of steps for 3D reconstruction",)
-    parser.add_argument("--octree_depth", type=int, default=7, help="Octree depth for 3D reconstruction",)
-    ############## data preprocess ##############
-    parser.add_argument("--no_rmbg", action="store_true", help="Do NOT remove the background",)
-    parser.add_argument("--rm_type", type=str, default="rembg", choices=["rembg", "sam"], help="Type of background removal",)
-    parser.add_argument("--bkgd_type", type=str, default="Remove", choices=["Alpha as mask", "Remove", "Original"], help="Type of background",)
-    parser.add_argument("--bkgd_color", type=str, default="[255,255,255,255]", help="Background color",)
-    parser.add_argument("--fg_ratio", type=float, default=1.0, help="Foreground ratio",)
-    parser.add_argument("--front_view", type=str, default="", help="Front view of the object",)
-    parser.add_argument("--right_view", type=str, default="", help="Right view of the object",)
-    parser.add_argument("--back_view", type=str, default="", help="Back view of the object",)
-    parser.add_argument("--left_view", type=str, default="", help="Left view of the object",)
-    parser.add_argument("--device", type=int, default=0)
-    args = parser.parse_args()
-    
-    device = torch.device(f"cuda:{args.device}" if torch.cuda.is_available() else "cpu")
-    os.makedirs(args.output, exist_ok=True)
-    
+def main(input_path:str, outputs_folder:str, weights_folder:str, views:Dict[str, str]=None,
+         seed:int=0, device:int=0,
+         guidance_scale_2D:float=3, step_2D:int=50,
+         guidance_scale_3D:float=3, step_3D:int=50, octree_depth:int=7,
+         remesh:bool=False, target_face_count:int=2000,
+         ) -> Tuple[str, List[str]]:
+
+    global model, generator, crm_pipeline
+
+    device = torch.device(f"cuda:{device}" if torch.cuda.is_available() else "cpu")
+    os.makedirs(outputs_folder, exist_ok=True)
+
     # load the shape diffusion model
-    if args.model == "":
-        ckpt_path = hf_hub_download(repo_id="wyysf/CraftsMan", filename="image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae/model.ckpt", repo_type="model")
-        config_path = hf_hub_download(repo_id="wyysf/CraftsMan", filename="image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae/config.yaml", repo_type="model")
-    else:
-        ckpt_path = f"{args.model}/model.ckpt"
-        config_path = f"{args.model}/config.yaml"    
-    model = load_model(ckpt_path, config_path, device)
-    generator = torch.Generator(device)
+    ckpt_path = f"{weights_folder}/model.ckpt"
+    config_path = f"{weights_folder}/config.yaml"
+    if not model: model = load_model(ckpt_path, config_path, device)
+    if not generator: generator = torch.Generator(device)
 
     # load the multi-view images model
-    if args.mv_model == "CRM":
+    if not crm_pipeline:
         stage1_config = OmegaConf.load(f"apps/third_party/CRM/configs/nf7_v3_SNR_rd_size_stroke.yaml").config
         stage1_sampler_config = stage1_config.sampler
         stage1_model_config = stage1_config.models
@@ -193,84 +122,101 @@ if __name__=="__main__":
                             device=device,
                             dtype=torch.float16
                         )
-    elif args.mv_model == "ImageDream":
-        imagedream_pipeline = MVDreamPipeline.from_pretrained(
-            "ashawkey/imagedream-ipmv-diffusers", # remote weights
-            torch_dtype=torch.float16,
-            trust_remote_code=True,
-        )
-        imagedream_pipeline.to(device)
-    elif args.mv_model == "Wonder3D":
-        wonder3d_pipeline = DiffusionPipeline.from_pretrained(
-            'flamehaze1115/wonder3d-v1.0', # remote weights
-            custom_pipeline='flamehaze1115/wonder3d-pipeline',
-            torch_dtype=torch.float16
-        )
-        wonder3d_pipeline.unet.enable_xformers_memory_efficient_attention()
-        wonder3d_pipeline.to(device)
-    else:
-        raise ValueError(f"Unsupported multi-view images model: {args.mv_model}")
-    
+
     # read the input images
-    if os.path.isdir(args.input):
-        image_files = glob(os.path.join(args.input, "*.png"))
+    if os.path.isdir(input_path):
+        image_files = glob(os.path.join(input_path, "*.png"))
     else:
-        image_files = [args.input]
-    
-    if args.no_rmbg:
-        rmbg = None
-    else:
-        # remove the background
-        rmbg = RMBG(device)
-    
+        image_files = [input_path]
+
     for image_file in image_files:
         print(f"Processing {image_file}")
         # generate the multi-view images
         image = Image.open(image_file)
-        if not args.no_rmbg:
-            image = rmbg.run(args.rm_type, image, args.fg_ratio, args.bkgd_type, tuple(json.loads(args.bkgd_color)))
+        image = preprocess_image(image, foreground_ratio=1.0)
         mvimages = gen_mvimg(
-            args.mv_model, 
-            image, 
-            args.seed, 
-            args.guidance_scale_2D, 
-            args.step_2D, 
-            "", # text for ImageDream
-            "ugly, blurry, pixelated obscure, unnatural colors, poor lighting, dull, unclear, cropped, lowres, low quality, artifacts, duplicate",
-            0.0, 
-            json.loads(args.bkgd_color)
+            image,
+            seed,
+            guidance_scale_2D,
+            step_2D,
         )
+        mvimg_paths = []
         for i, mvimg in enumerate(mvimages):
-            mvimg.save(os.path.join(args.output, f"{os.path.basename(image_file).split('.')[0]}_{i}.png"))
-            
+            mvimg_path = os.path.join(outputs_folder, f"{os.path.basename(image_file).split('.')[0]}_{i}.png")
+            mvimg.save(mvimg_path)
+            mvimg_paths.append(mvimg_path)
+
         # manually set the view images
         mvimages = list(mvimages)
-        if args.front_view != "":
-            view_front = Image.open(args.front_view)
+        views = views or {}
+        if front_view_path := views.get("front"):
+            view_front = Image.open(front_view_path)
             mvimages[0] = view_front
-        if args.right_view != "":
-            view_right = Image.open(args.right_view)
+        if right_view_path := views.get("right"):
+            view_right = Image.open(right_view_path)
             mvimages[1] = view_right
-        if args.back_view != "":
-            view_back = Image.open(args.back_view)
+        if back_view_path := views.get("back"):
+            view_back = Image.open(back_view_path)
             mvimages[2] = view_back
-        if args.left_view != "":
-            view_left = Image.open(args.left_view)
+        if left_view_path := views.get("left"):
+            view_left = Image.open(left_view_path)
             mvimages[3] = view_left
-        
-        # inference the 3D shape    
-        filepath = os.path.join(args.output, os.path.basename(image_file).split(".")[0] + ".obj")
+
+        # inference the 3D shape
+        filepath = os.path.join(outputs_folder, os.path.basename(image_file).split(".")[0] + ".obj")
         out_path = image2mesh(
-            np.array(mvimages[0]), 
-            np.array(mvimages[1]), 
-            np.array(mvimages[2]), 
+            np.array(mvimages[0]),
+            np.array(mvimages[1]),
+            np.array(mvimages[2]),
             np.array(mvimages[3]),
             filepath,
-            args.remesh,
-            args.target_face_count,
-            guidance_scale=args.guidance_scale_3D,
-            step=args.step_3D,
-            seed=args.seed,
-            octree_depth=args.octree_depth
+            remesh,
+            target_face_count,
+            guidance_scale=guidance_scale_3D,
+            step=step_3D,
+            seed=seed,
+            octree_depth=octree_depth
         )
         print(f"Output mesh saved to {out_path}")
+
+    return out_path, mvimg_paths
+
+if __name__=="__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", type=str, default="./eval_data", help="Path to the input data",)
+    parser.add_argument("--output", type=str, default="./eval_outputs", help="Path to the inference results",)
+    ############## model and mv model ##############
+    parser.add_argument("--model", type=str, default="", help="Path to the image-to-shape diffusion model",)
+    ############## inference ##############
+    parser.add_argument("--seed", type=int, default=4, help="Random seed for generating multi-view images",)
+    parser.add_argument("--guidance_scale_2D", type=float, default=3, help="Guidance scale for generating multi-view images",)
+    parser.add_argument("--step_2D", type=int, default=50, help="Number of steps for generating multi-view images",)
+    parser.add_argument("--remesh", action="store_true", help="Remesh the output mesh",)
+    parser.add_argument("--target_face_count", type=int, default=2000, help="Target face count for remeshing",)
+    parser.add_argument("--guidance_scale_3D", type=float, default=3, help="Guidance scale for 3D reconstruction",)
+    parser.add_argument("--step_3D", type=int, default=50, help="Number of steps for 3D reconstruction",)
+    parser.add_argument("--octree_depth", type=int, default=7, help="Octree depth for 3D reconstruction",)
+    ############## data preprocess ##############
+    parser.add_argument("--front_view", type=str, default="", help="Front view of the object",)
+    parser.add_argument("--right_view", type=str, default="", help="Right view of the object",)
+    parser.add_argument("--back_view", type=str, default="", help="Back view of the object",)
+    parser.add_argument("--left_view", type=str, default="", help="Left view of the object",)
+    parser.add_argument("--device", type=int, default=0)
+    args = parser.parse_args()
+
+    views = {}
+    if args.front_view != "":
+        views["front"] = args.front_view
+    if args.right_view != "":
+        views["right"] = args.right_view
+    if args.back_view != "":
+        views["back"] = args.back_view
+    if args.left_view != "":
+        views["left"] = args.left_view
+
+    main(args.input, args.output, args.model, views=views,
+         seed=args.seed, device=args.device,
+         guidance_scale_2D=args.guidance_scale_2D, step_2D=args.step_2D,
+         guidance_scale_3D=args.guidance_scale_3D, step_3D=args.step_3D, octree_depth=args.octree_depth,
+         remesh=args.remesh, target_face_count=args.target_face_count)
+ 

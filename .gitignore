@@ -1,0 +1,5 @@
+ckpts/
+**/__pycache__/
+apps/mydata/
+eval_data/
+eval_outputs/
