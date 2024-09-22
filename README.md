@@ -9,7 +9,8 @@
 <div align="center">
   <a href="https://craftsman3d.github.io/"><img src="https://img.shields.io/static/v1?label=Project%20Page&message=Github&color=blue&logo=github-pages"></a> &ensp;
   <a href="https://huggingface.co/spaces/wyysf/CraftsMan"><img src="https://img.shields.io/static/v1?label=Demo&message=HF&color=yellow"></a> &ensp;
-  <a class="btn" href="https://a3b7e6fd333c27deaa.gradio.live" role="button" target="_blank"> <i class="fa-solid fa-chess-knight"></i> Gradio </a> &ensp;
+  <a class="btn" href="https://a3b7e6fd333c27deaa.gradio.live" role="button" target="_blank"> 
+    <i class="fa-solid fa-chess-knight"></i> Gradio </a> &ensp;
   <a href="https://arxiv.org/pdf/2405.14979"><img src="https://img.shields.io/static/v1?label=Paper&message=Arxiv&color=red&logo=arxiv"></a> &ensp;
 </div>
 
