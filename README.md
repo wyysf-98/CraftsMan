@@ -8,7 +8,7 @@
 #####  <p align="center"> <sup>1</sup>HKUST, <sup>2</sup>LightIllusions, <sup>3</sup>HKUST(GZ), <sup>4</sup>Tencent AI Lab</p>
 <div align="center">
   <a href="https://craftsman3d.github.io/"><img src="https://img.shields.io/static/v1?label=Project%20Page&message=Github&color=blue&logo=github-pages"></a> &ensp;
-  <a href="[https://huggingface.co/spaces/wyysf/CraftsMan](https://a3b7e6fd333c27deaa.gradio.live)"> <img src="https://www.gradio.app/_app/immutable/assets/gradio.CHB5adID.svg" height="25"/></a> &ensp;
+  <a href="https://a3b7e6fd333c27deaa.gradio.live"><img src="https://www.gradio.app/_app/immutable/assets/gradio.CHB5adID.svg" height="25"/></a> &ensp;
 <!--   <a class="btn" href="https://a3b7e6fd333c27deaa.gradio.live" role="button" target="_blank"> 
     <i class="fa-solid fa-chess-knight"></i> Gradio </a> &ensp; -->
   <a href="https://arxiv.org/pdf/2405.14979"><img src="https://img.shields.io/static/v1?label=Paper&message=Arxiv&color=red&logo=arxiv"></a> &ensp;
