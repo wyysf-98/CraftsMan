@@ -1,3 +1,3 @@
 from . import (
-    simple_denoiser,
+    pixart_denoiser
 )

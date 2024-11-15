@@ -124,7 +124,6 @@ class ShapeAutoEncoderSystem(BaseSystem):
         union = (pred + labels).gt(0).sum(dim=1)
         iou = intersection * 1.0 / union + 1e-5
         iou = iou.mean()
-
         self.log("val/accuracy", accuracy)
         self.log("val/iou", iou)
 

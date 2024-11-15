@@ -1,4 +1,4 @@
 from . import (
     shape_autoencoder,
-    shape_diffusion,
+    pixart_diffusion,
 )

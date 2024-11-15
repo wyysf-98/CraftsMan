@@ -1,3 +1,3 @@
 from . import (
-    clip_encoder,
+    cond_encoder
 )

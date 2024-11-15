@@ -98,7 +98,7 @@ class ExperimentConfig:
         self.trial_name += self.timestamp
         self.exp_dir = os.path.join(self.exp_root_dir, self.name)
         self.trial_dir = os.path.join(self.exp_dir, self.trial_name)
-        os.makedirs(self.trial_dir, exist_ok=True)
+        # os.makedirs(self.trial_dir, exist_ok=True)
 
 
 def load_config(*yamls: str, cli_args: list = [], from_string=False, **kwargs) -> Any:

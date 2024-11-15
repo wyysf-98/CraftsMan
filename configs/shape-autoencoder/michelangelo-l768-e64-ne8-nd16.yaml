@@ -1,0 +1,94 @@
+exp_root_dir: "outputs"
+name: "michelangelo-autoencoder/michelangelo-l768-e64-ne8-nd16"
+tag: "${rmspace:n${data.n_samples}+${data.supervision_type}+rot${data.rotate_points}+noise${data.noise_sigma}+${system.shape_model.embed_type}+dsample${system.shape_model.use_downsample}+pfeat${system.shape_model.point_feats}+logits${system.loss.lambda_logits}+kl${system.loss.lambda_kl}+lr${system.optimizer.args.lr},_}"
+seed: 0
+
+data_type: "Objaverse-datamodule"
+data:
+  root_dir: ./data/objaverse
+
+  load_geometry: True           # whether to load geometry
+  geo_data_type: "tsdf" 
+  n_samples: 10240
+  load_supervision: True
+  supervision_type: "occupancy" 
+  n_supervision: 10240
+  tsdf_threshold: 0.0078125     # threshold for truncating sdf values, used when input is sdf
+
+  load_image: False             # whether to load images 
+  load_caption: False           # whether to load captions
+
+  batch_size: 8
+  num_workers: 0
+
+system_type: "shape-autoencoder-system"
+system:
+  sample_posterior: true
+  
+  shape_model_type: "michelangelo-autoencoder"
+  shape_model:
+    num_latents: 1024 # 1024
+    embed_dim: 64
+    point_feats: 3   # xyz + normal
+    out_dim: 1 # only occupancy
+    embed_type: "fourier"
+    num_freqs: 8
+    include_pi: false
+    heads: 12
+    width: 768
+    num_encoder_layers: 8
+    num_decoder_layers: 16
+    use_ln_post: true
+    init_scale: 0.25
+    qkv_bias: true
+    use_flash: true
+    use_checkpoint: true
+    use_downsample: true
+
+  loggers:
+    wandb:
+      enable: false
+      project: "CraftsMan"
+      name: shape-autoencoder+${name}+${tag}
+
+  loss:
+    lambda_logits: 1.
+    lambda_kl: 0.001
+
+  optimizer:
+    name: AdamW
+    args:
+      lr: 1.e-4
+      betas: [0.9, 0.99]
+      eps: 1.e-6
+
+  scheduler:
+    name: SequentialLR
+    interval: step
+    schedulers:
+      - name: LinearLR
+        interval: step
+        args:
+          start_factor: 1e-6
+          end_factor: 1.0
+          total_iters: 5000
+      - name: CosineAnnealingLR
+        interval: step
+        args:
+          T_max: 5000
+          eta_min: 0.
+    milestones: [5000]
+
+trainer:
+  num_nodes: 1
+  max_epochs: 100000
+  log_every_n_steps: 5
+  num_sanity_val_steps: 1
+  check_val_every_n_epoch: 600
+  enable_progress_bar: true
+  precision: 16-mixed
+
+checkpoint:
+  save_last: true
+  save_top_k: -1
+  every_n_train_steps: 5000

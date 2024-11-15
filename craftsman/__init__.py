@@ -1,4 +1,7 @@
 import importlib
+from .pipeline import (
+    CraftsManPipeline
+)
 
 __modules__ = {}
 

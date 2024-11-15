@@ -16,6 +16,23 @@ from pytorch_lightning.callbacks.progress import TQDMProgressBar
 from pytorch_lightning.utilities.rank_zero import rank_zero_only, rank_zero_warn
 
 
+class EarlyEnvironmentSetter(Callback):
+    def __init__(self):
+        super().__init__()
+        self.rank_set = False
+    
+    def setup(self, trainer, pl_module, stage):
+        if not self.rank_set: 
+            world_size = trainer.num_devices
+            local_rank = trainer.strategy.local_rank
+
+            os.environ['WORLD_SIZE'] = str(world_size)
+            os.environ['LOCAL_WORLD_SIZE'] = str(world_size)
+            os.environ['LOCAL_RANK'] = str(local_rank)
+            os.environ['RANK'] = str(local_rank)
+
+            self.rank_set = True
+
 class VersionedCallback(Callback):
     def __init__(self, save_root, version=None, use_version=True):
         self.save_root = save_root

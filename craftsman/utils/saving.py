@@ -645,6 +645,12 @@ class SaverMixin:
         save_path = self.get_save_path(filename)
         shutil.copyfile(src_path, save_path)
         return save_path
+    
+    def save_txt(self, filename, comment) -> str:
+        save_path = self.get_save_path(filename)
+        with open(save_path, "w") as f:
+            f.write(comment)
+        return save_path
 
     def save_json(self, filename, payload) -> str:
         save_path = self.get_save_path(filename)

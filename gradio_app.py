@@ -11,8 +11,11 @@ from omegaconf import OmegaConf
 from huggingface_hub import hf_hub_download
 from diffusers import DiffusionPipeline
 
+import PIL
+from PIL import Image
 from collections import OrderedDict
 import trimesh
+import rembg
 import gradio as gr
 from typing import Any
 
@@ -21,12 +24,13 @@ sys.path.append(os.path.join(proj_dir))
 
 import tempfile
 
-from apps.utils import *
+import craftsman
+from craftsman.utils.config import ExperimentConfig, load_config
 
 _TITLE = '''CraftsMan: High-fidelity Mesh Generation with 3D Native Generation and Interactive Geometry Refiner'''
 _DESCRIPTION = '''
 <div>
-<span style="color: red;">Important: The ckpt models released have been primarily trained on character data, hence they are likely to exhibit superior performance in this category. We are also planning to release more advanced pretrained models in the future.</span>
+<span style="color: red;">Important: If you have your own data and want to collaborate, we are welcom to any contact.</span>
 <div>
 Select or upload a image, then just click 'Generate'. 
 <br>
@@ -59,107 +63,101 @@ CraftsMan is under [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.en.html), so
 📧 **Contact**
 If you have any questions, feel free to open a discussion or contact us at <b>weiyuli.cn@gmail.com</b>.
 """
-from apps.third_party.LGM.pipeline_mvdream import MVDreamPipeline
-from apps.third_party.CRM.pipelines import TwoStagePipeline
-from apps.third_party.Wonder3D.mvdiffusion.pipelines.pipeline_mvdiffusion_image import MVDiffusionImagePipeline
-
 
 model = None
 cached_dir = None
-stage1_config = OmegaConf.load(f"apps/third_party/CRM/configs/nf7_v3_SNR_rd_size_stroke.yaml").config
-stage1_sampler_config = stage1_config.sampler
-stage1_model_config = stage1_config.models
-stage1_model_config.resume = hf_hub_download(repo_id="Zhengyi/CRM", filename="pixel-diffusion.pth", repo_type="model")
-stage1_model_config.config = f"apps/third_party/CRM/" + stage1_model_config.config
-crm_pipeline = None
-
-sys.path.append(f"apps/third_party/LGM")
-imgaedream_pipeline = None
-
-sys.path.append(f"apps/third_party/Wonder3D")
-wonder3d_pipeline = None
 
 generator = None
 
-@spaces.GPU
-def gen_mvimg(
-    mvimg_model, image, seed, guidance_scale, step, text, neg_text, elevation, backgroud_color
-):
-    if seed == 0:
-        seed = np.random.randint(1, 65535)
+def check_input_image(input_image):
+    if input_image is None:
+        raise gr.Error("No image uploaded!")
 
-    if mvimg_model == "CRM":
-        global crm_pipeline
-        crm_pipeline.set_seed(seed)
-        background = Image.new("RGBA", image.size, (127, 127, 127))
-        image = Image.alpha_composite(background, image)
-        mv_imgs = crm_pipeline(
-            image, 
-            scale=guidance_scale, 
-            step=step
-        )["stage1_images"]
-        return mv_imgs[5], mv_imgs[3], mv_imgs[2], mv_imgs[0]
-    
-    elif mvimg_model == "ImageDream":
-        global imagedream_pipeline, generator
-        background = Image.new("RGBA", image.size, backgroud_color)
-        image = Image.alpha_composite(background, image)
+class RMBG(object):
+    def __init__(self):
+        pass
 
-        image = np.array(image).astype(np.float32) / 255.0
-        image = image[..., :3] * image[..., 3:4] + (1 - image[..., 3:4])
-        mv_imgs = imagedream_pipeline(
-            text, 
-            image, 
-            negative_prompt=neg_text, 
-            guidance_scale=guidance_scale,  
-            num_inference_steps=step, 
-            elevation=elevation,
-            generator=generator.manual_seed(seed),
-        )
-        return mv_imgs[1], mv_imgs[2], mv_imgs[3], mv_imgs[0]
-    
-    elif mvimg_model == "Wonder3D":
-        global wonder3d_pipeline
-        background = Image.new("RGBA", image.size, backgroud_color)
-        image = Image.alpha_composite(background, image)
+    def rmbg_rembg(self, input_image, background_color):
+        def _rembg_remove(
+            image: PIL.Image.Image,
+            rembg_session = None,
+            force: bool = False,
+            **rembg_kwargs,
+        ) -> PIL.Image.Image:
+            do_remove = True
+            if image.mode == "RGBA" and image.getextrema()[3][0] < 255:
+                # explain why current do not rm bg
+                print("alhpa channl not enpty, skip remove background, using alpha channel as mask")
+                background = Image.new("RGBA", image.size, background_color)
+                image = Image.alpha_composite(background, image)
+                do_remove = False
+            do_remove = do_remove or force
+            if do_remove:
+                image = rembg.remove(image, session=rembg_session, **rembg_kwargs)
 
-        image = Image.fromarray(np.array(image).astype(np.uint8)[..., :3]).resize((256, 256))
-        mv_imgs = wonder3d_pipeline(
-            image, 
-            guidance_scale=guidance_scale, 
-            num_inference_steps=step,
-            generator=generator.manual_seed(seed),
-        ).images
-        return mv_imgs[0], mv_imgs[2], mv_imgs[4], mv_imgs[5]
+            # calculate the min bbox of the image
+            alpha = image.split()[-1]
+            image = image.crop(alpha.getbbox())
 
-@spaces.GPU
-def image2mesh(view_front: np.ndarray, 
-               view_right: np.ndarray, 
-               view_back: np.ndarray, 
-               view_left: np.ndarray,
+            return image
+        return _rembg_remove(input_image, None, force_remove=True)
+
+    def run(self, rm_type, image, foreground_ratio, background_choice, background_color=(0, 0, 0, 0)):
+        if "Original" in background_choice:
+            return image
+        else:
+            if background_choice == "Alpha as mask":
+                alpha = image.split()[-1]
+                image = image.crop(alpha.getbbox())
+            
+            elif "Remove" in background_choice:
+                if rm_type.upper() == "REMBG":
+                    image = self.rmbg_rembg(image, background_color=background_color)
+                else:
+                    return -1
+        
+            # Calculate the new size after rescaling
+            new_size = tuple(int(dim * foreground_ratio) for dim in image.size)
+            # Resize the image while maintaining the aspect ratio
+            resized_image = image.resize(new_size)
+            # Create a new image with the original size and white background
+            padded_image = PIL.Image.new("RGBA", image.size, (0, 0, 0, 0))
+            paste_position = ((image.width - resized_image.width) // 2, (image.height - resized_image.height) // 2)
+            padded_image.paste(resized_image, paste_position)
+
+            # expand image to 1:1
+            width, height = padded_image.size
+            if width == height:
+                return padded_image
+            new_size = (max(width, height), max(width, height))
+            image = PIL.Image.new("RGBA", new_size, (0, 0, 0, 0))
+            paste_position = ((new_size[0] - width) // 2, (new_size[1] - height) // 2)
+            image.paste(padded_image, paste_position)
+            return image
+
+# @spaces.GPU
+def image2mesh(image: Any, 
                more: bool = False,
                scheluder_name: str ="DDIMScheduler",
                guidance_scale: int = 7.5,
+               steps: int = 30,
                seed: int = 4,
+               target_face_count: int = 2000,
                octree_depth: int = 7):
     
     sample_inputs = {
-        "mvimages": [[
-            Image.fromarray(view_front), 
-            Image.fromarray(view_right), 
-            Image.fromarray(view_back), 
-            Image.fromarray(view_left)
-        ]]
+        "image": [
+            image
+        ]
     }
 
     global model
     latents = model.sample(
         sample_inputs,
         sample_times=1,
+        steps=steps,
         guidance_scale=guidance_scale,
-        return_intermediates=False,
         seed=seed
-       
     )[0]
     
     # decode the latents to mesh
@@ -178,63 +176,39 @@ def image2mesh(view_front: np.ndarray,
     if 'Remesh' in more:
         remeshed_filepath = tempfile.NamedTemporaryFile(suffix=f"_remeshed.obj", delete=False).name
         print("Remeshing with Instant Meshes...")
-        # target_face_count = int(len(mesh.faces)/10)
-        target_face_count = 2000
         command = f"{proj_dir}/apps/third_party/InstantMeshes {filepath} -f {target_face_count} -o {remeshed_filepath}"
         os.system(command)
         filepath = remeshed_filepath
-        # filepath = filepath.replace('.obj', '_remeshed.obj')
     
     return filepath
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_path", type=str, default="", help="Path to the object file",)
-    parser.add_argument("--cached_dir", type=str, default="./gradio_cached_dir")
+    parser.add_argument("--model_path", type=str, default="./ckpts/craftsman-v1-5", help="Path to the object file",)
+    parser.add_argument("--cached_dir", type=str, default="")
     parser.add_argument("--device", type=int, default=0)
     args = parser.parse_args()
 
 
     cached_dir = args.cached_dir
-    os.makedirs(args.cached_dir, exist_ok=True)
+    if cached_dir != "":
+        os.makedirs(args.cached_dir, exist_ok=True)
     device = torch.device(f"cuda:{args.device}" if torch.cuda.is_available() else "cpu")
     print(f"using device: {device}")
 
-    # for multi-view images generation
+    # for input image
     background_choice = OrderedDict({ 
         "Alpha as Mask": "Alpha as Mask",
         "Auto Remove Background": "Auto Remove Background",
         "Original Image": "Original Image",        
     })
-    mvimg_model_config_list = ["CRM", "ImageDream", "Wonder3D"]
-    crm_pipeline = TwoStagePipeline(
-                        stage1_model_config,
-                        stage1_sampler_config,
-                        device=device,
-                        dtype=torch.float16
-                    )
-    imagedream_pipeline = MVDreamPipeline.from_pretrained(
-        "ashawkey/imagedream-ipmv-diffusers", # remote weights
-        torch_dtype=torch.float16,
-        trust_remote_code=True,
-    )
-    imagedream_pipeline.to(device)
-    wonder3d_pipeline = DiffusionPipeline.from_pretrained(
-        'flamehaze1115/wonder3d-v1.0', # remote weights
-        custom_pipeline='flamehaze1115/wonder3d-pipeline',
-        torch_dtype=torch.float16
-    )
-    # enable xformers
-    wonder3d_pipeline.unet.enable_xformers_memory_efficient_attention()
-    wonder3d_pipeline.to(device)
 
     generator = torch.Generator(device)
 
-
     # for 3D latent set diffusion
     if args.model_path == "":
-        ckpt_path = hf_hub_download(repo_id="wyysf/CraftsMan", filename="image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae/model.ckpt", repo_type="model")
-        config_path = hf_hub_download(repo_id="wyysf/CraftsMan", filename="image-to-shape-diffusion/clip-mvrgb-modln-l256-e64-ne8-nd16-nl6-aligned-vae/config.yaml", repo_type="model")
+        ckpt_path = hf_hub_download(repo_id="craftsman3d/craftsman-v1-5", filename="model.ckpt", repo_type="model")
+        config_path = hf_hub_download(repo_id="craftsman3d/craftsman-v1-5", filename="config.yaml", repo_type="model")
     else:
         ckpt_path = os.path.join(args.model_path, "model.ckpt")
         config_path = os.path.join(args.model_path, "config.yaml")
@@ -275,22 +249,12 @@ if __name__=="__main__":
                     gr.Markdown('''Try a different <b>seed and MV Model</b> for better results. Good Luck :)''')
                 with gr.Row():
                     seed = gr.Number(0, label='Seed', show_label=True)
-                    mvimg_model = gr.Dropdown(value="CRM", label="MV Image Model", choices=list(mvimg_model_config_list))
-                    # mvimg_model = gr.Dropdown(value="Wonder3D", label="MV Image Model", choices=list(mvimg_model_config_list))
-                    more = gr.CheckboxGroup(["Remesh", "Symmetry(TBD)"], label="More", show_label=False)
-                with gr.Row():
-                    # input prompt
-                    text = gr.Textbox(label="Prompt (Opt.)", info="only works for ImageDream")
-
-                with gr.Accordion('Advanced options', open=False):
-                    # negative prompt
-                    neg_text = gr.Textbox(label="Negative Prompt", value='ugly, blurry, pixelated obscure, unnatural colors, poor lighting, dull, unclear, cropped, lowres, low quality, artifacts, duplicate')
-                    # elevation
-                    elevation = gr.Slider(label="elevation", minimum=-90, maximum=90, step=1, value=0)
+                    more = gr.CheckboxGroup(["Remesh"], label="More", show_label=False)
+                    target_face_count = gr.Number(2000, label='Target Face Count', show_label=True)
 
                 with gr.Row():
                     gr.Examples(
-                        examples=[os.path.join("./apps/examples", i) for i in os.listdir("./apps/examples")],
+                        examples=[os.path.join("./assets/examples", i) for i in os.listdir("./assets/examples")],
                         inputs=[image_input],
                         examples_per_page=8
                     )
@@ -305,38 +269,12 @@ if __name__=="__main__":
                 with gr.Row():
                     gr.Markdown('''*please note that the model is fliped due to the gradio viewer, please download the obj file and you will get the correct orientation.''')
                     
-                with gr.Row():
-                    view_front = gr.Image(label="Front", interactive=True, show_label=True)
-                    view_right = gr.Image(label="Right", interactive=True, show_label=True)
-                    view_back = gr.Image(label="Back", interactive=True, show_label=True)
-                    view_left = gr.Image(label="Left", interactive=True, show_label=True)
-                    
                 with gr.Accordion('Advanced options', open=False):
-                    with gr.Row(equal_height=True):
-                        run_mv_btn = gr.Button('Only Generate 2D', interactive=True)
-                        run_3d_btn = gr.Button('Only Generate 3D', interactive=True)
-
-                with gr.Accordion('Advanced options (2D)', open=False):
-                    with gr.Row():
-                        foreground_ratio = gr.Slider(
-                                label="Foreground Ratio",
-                                minimum=0.5,
-                                maximum=1.0,
-                                value=1.0,
-                                step=0.05,
-                            )
-                        
                     with gr.Row():
                         background_choice = gr.Dropdown(label="Backgroud Choice", value="Auto Remove Background",choices=list(background_choice.keys()))
                         rmbg_type = gr.Dropdown(label="Backgroud Remove Type", value="rembg",choices=['sam', "rembg"])
-                        backgroud_color = gr.ColorPicker(label="Background Color", value="#FFFFFF", interactive=True)
-                        # backgroud_color = gr.ColorPicker(label="Background Color", value="#7F7F7F", interactive=True)
-                        
-                    with gr.Row():
-                        mvimg_guidance_scale = gr.Number(value=3.0, minimum=3, maximum=10, label="2D Guidance Scale")
-                        mvimg_steps = gr.Number(value=30, minimum=20, maximum=100, label="2D Sample Steps")
-            
-                with gr.Accordion('Advanced options (3D)', open=False):
+                        foreground_ratio = gr.Slider(label="Foreground Ratio", value=1.0, minimum=0.5, maximum=1.0, step=0.01)
+
                     with gr.Row():
                         guidance_scale = gr.Number(label="3D Guidance Scale", value=5.0, minimum=3.0, maximum=10.0)
                         steps = gr.Number(value=50, minimum=20, maximum=100, label="3D Sample Steps")
@@ -348,31 +286,28 @@ if __name__=="__main__":
         gr.Markdown(_CITE_)
 
         outputs = [output_model_obj]
-        rmbg = RMBG(device)
+        rmbg = RMBG()
         
-        model = load_model(ckpt_path, config_path, device)
+        # model = load_model(ckpt_path, config_path, device)
+        cfg = load_config(config_path)
+        model = craftsman.find(cfg.system_type)(cfg.system)
+        print(f"Restoring states from the checkpoint path at {ckpt_path} with config {cfg}")
+        ckpt = torch.load(ckpt_path, map_location=torch.device('cpu'))
+        model.load_state_dict(
+            ckpt["state_dict"] if "state_dict" in ckpt else ckpt,
+        )
+        model = model.to(device).eval()
+
 
         run_btn.click(fn=check_input_image, inputs=[image_input]
                     ).success(
                             fn=rmbg.run, 
-                            inputs=[rmbg_type, image_input, foreground_ratio, background_choice, backgroud_color],
+                            inputs=[rmbg_type, image_input, foreground_ratio, background_choice],
                             outputs=[image_input]
                     ).success(
-                            fn=gen_mvimg,
-                            inputs=[mvimg_model, image_input, seed, mvimg_guidance_scale, mvimg_steps, text, neg_text, elevation, backgroud_color],
-                            outputs=[view_front, view_right, view_back, view_left]
-                    ).success(
                             fn=image2mesh, 
-                            inputs=[view_front, view_right, view_back, view_left, more, scheduler, guidance_scale, seed, octree_depth],
+                            inputs=[image_input, more, scheduler, guidance_scale, steps, seed, target_face_count, octree_depth],
                             outputs=outputs, 
                             api_name="generate_img2obj")
-        run_mv_btn.click(fn=gen_mvimg,
-                        inputs=[mvimg_model, image_input, seed, mvimg_guidance_scale, mvimg_steps, text, neg_text, elevation, backgroud_color],
-                        outputs=[view_front, view_right, view_back, view_left]
-        )
-        run_3d_btn.click(fn=image2mesh, 
-                        inputs=[view_front, view_right, view_back, view_left, more, scheduler, guidance_scale, seed, octree_depth],
-                        outputs=outputs, 
-                        api_name="generate_img2obj")
         
         demo.queue().launch(share=True, allowed_paths=[args.cached_dir])

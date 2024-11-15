@@ -1,11 +1,10 @@
-FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-devel
+FROM pytorch/pytorch:2.3.0-cuda12.1-cudnn8-devel
 
 # For the convenience for users in China mainland
 # COPY apt-sources.list /etc/apt/sources.list
 
 # Install some basic utilities
-RUN rm /etc/apt/sources.list.d/cuda.list
-RUN rm /etc/apt/sources.list.d/nvidia-ml.list
+RUN chmod 1777 /tmp
 RUN apt-get update && apt-get install -y \
     curl \
     ca-certificates \
@@ -43,5 +42,6 @@ RUN apt-get update && apt-get install -y \
 # Install dependencies
 COPY requirements.txt requirements.txt 
 RUN pip install -r requirements.txt --user 
+RUN pip install -U xformers==0.0.26.post1 --index-url https://download.pytorch.org/whl/cu121
 
 CMD ["python3"]

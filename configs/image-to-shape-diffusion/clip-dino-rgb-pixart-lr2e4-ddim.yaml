@@ -1,0 +1,149 @@
+exp_root_dir: "outputs"
+name: "image-to-shape-diffusion/clip-dino-rgb-pixart-lr2e4-ddim"
+tag: "${rmspace:${system.shape_model_type}+n${data.n_samples}+pfeat${system.shape_model.point_feats}+lr${system.optimizer.args.lr},_}"
+seed: 0
+
+data_type: "objaverse-datamodule"
+data:
+  root_dir: ./data/objaverse
+  data_type: "sdf" 
+  sampling_strategy: random
+  n_samples: 10240
+  
+  load_supervision: False
+  supervision_type: "" 
+  n_supervision: 0
+
+  load_image: True              # whether to load images 
+  image_data_path: ./data/objaverse/render+blender+singleview+nv20
+  image_type: "rgb"             # rgb, normal
+  idx: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]        # front view
+  n_views: 1
+  background_color: [0.5, 0.5, 0.5]
+  marign_pix_dis: 30
+
+  batch_size: 40
+  num_workers: 16
+
+system_type: "pixart-diffusion-system"
+system:
+  val_samples_json: "val_data/images/val_samples_rgb_image.json"
+  z_scale_factor: 1.0
+  guidance_scale: 7.5
+  num_inference_steps: 50
+  eta: 0.0
+  extract_mesh_func: diffdmc
+
+  shape_model_type: michelangelo-autoencoder
+  shape_model:
+    pretrained_model_name_or_path: /mnt/cfs/public/native3D/ckpts/michelangelo-autoencoder-l256-e64-ne8-nd16-scaleup.ckpt
+    use_downsample: true
+    downsample_ratio: 0.0625
+    num_latents: 768
+    use_multi_reso: false
+    resolutions: [4096, 8192, 12288]
+    sampling_prob: [0, 0, 1]
+    embed_dim: 64
+    point_feats: 3
+    out_dim: 1
+    num_freqs: 8
+    include_pi: false
+    heads: 12
+    width: 768
+    num_encoder_layers: 8
+    num_decoder_layers: 16
+    use_ln_post: true
+    init_scale: 0.25
+    qkv_bias: false
+    use_flash: true
+    use_checkpoint: true
+    
+
+  condition_model_type: "cond-embedder"
+  condition_model:
+    pretrained_clip_name_or_path: openai/clip-vit-large-patch14
+    pretrained_dino_name_or_path: facebook/dinov2-base
+    pretrained_tokenizer_name_or_path: openai/clip-vit-large-patch14
+    freeze_modulation_clip: true
+    freeze_modulation_dino: true
+    encode_camera: false
+    camera_embeds_dim: 0
+    n_views: ${data.n_views}
+    empty_embeds_ratio: 0.1
+    normalize_embeds: false
+    zero_uncond_embeds: true
+    linear_proj_init: constant
+    image_size_dino: 224
+    image_size_clip: 224
+
+  denoiser_model_type: "pixart-denoiser"
+  denoiser_model:
+    input_channels: ${system.shape_model.embed_dim}
+    output_channels:  ${system.shape_model.embed_dim}
+    n_ctx: ${system.shape_model.num_latents}
+    width: 768
+    layers: 32
+    heads: 12
+    context_dim: 1024
+    init_scale: 1.0
+    skip_ln: true
+    variance_type: ${system.noise_scheduler.variance_type}
+    use_checkpoint: true
+    dit_block: DiTBlock
+
+  noise_scheduler_type: "diffusers.schedulers.DDPMScheduler"
+  noise_scheduler:
+    num_train_timesteps: 1000
+    beta_start: 0.00085
+    beta_end: 0.012
+    beta_schedule: "scaled_linear"
+    variance_type: "fixed_small"
+    clip_sample: false
+
+  denoise_scheduler_type: "diffusers.schedulers.DDIMScheduler"
+  denoise_scheduler:
+    num_train_timesteps: 1000
+    beta_start: 0.00085
+    beta_end: 0.012
+    beta_schedule: "scaled_linear"
+    clip_sample: false   # clip sample to -1~1
+    set_alpha_to_one: false
+    steps_offset: 1
+
+  loggers:
+    wandb:
+      enable: false
+      project: "CraftsMan"
+      name: image-to-shape-diffusion+${name}+${tag}
+
+  loss:
+    loss_type: "mse"
+    lambda_diffusion: 1.
+
+  optimizer:
+    name: AdamW
+    args:
+      lr: 2.e-4
+      betas: [0.9, 0.99]
+      eps: 1.e-6
+
+  scheduler:
+    name: CosineAnnealingLR
+    args:
+      T_max: 5000
+      eta_min: 1e-6
+
+trainer:
+  num_nodes: 1
+  max_epochs: 100000
+  log_every_n_steps: 5
+  num_sanity_val_steps: 1
+  check_val_every_n_epoch: 25
+  enable_progress_bar: true
+  precision: 16-mixed
+  strategy: 'ddp_find_unused_parameters_true'
+
+checkpoint:
+  save_last: true
+  save_top_k: -1
+  every_n_train_steps: 5000
