@@ -158,6 +158,7 @@ class CraftsManPipeline():
         background_color: List[int] = [255, 255, 255],
         foreground_ratio: float = 0.95,
         mc_depth: int = 8,
+        only_max_component: bool = False,
     ):
         r"""
         Function invoked when calling the pipeline for generation.
@@ -198,6 +199,9 @@ class CraftsManPipeline():
             mc_depth (`int`, *optional*, defaults to 8):
                 The resolution of the Marching Cubes algorithm. The resolution is the number of cubes in the x, y, and z.
                 8 means 2^8 = 256 cubes in each dimension. The higher the resolution, the more detailed the mesh will be.
+            only_max_component (`bool`, *optional*, defaults to `False`):
+                Whether to only keep the largest connected component of the mesh. This is useful when the mesh has
+                multiple components and only the largest one is needed.
         Examples:
 
         Returns:
@@ -258,6 +262,15 @@ class CraftsManPipeline():
                 if output_type == "trimesh":
                     import trimesh
                     cur_mesh = trimesh.Trimesh(vertices=mesh_v_f[0][0], faces=mesh_v_f[0][1])
+                    if only_max_component:
+                        components = cur_mesh.split(only_watertight=False)
+                        bbox = []
+                        for c in components:
+                            bbmin = c.vertices.min(0)
+                            bbmax = c.vertices.max(0)
+                            bbox.append((bbmax - bbmin).max())
+                        max_component = np.argmax(bbox)
+                        cur_mesh = components[max_component]
                     mesh.append(cur_mesh)
                 elif output_type == "np":
                     mesh.append(mesh_v_f[0])
