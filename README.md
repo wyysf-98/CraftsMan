@@ -3,7 +3,7 @@
   <img src="asset/logo.png"  height=220>
 </p>
 
-### <div align="center">CraftsMan3D-v1-5: High-fidelity Mesh Generation <br> with 3D Native Generation and Interactive Geometry Refiner<div> 
+### <div align="center">CraftsMan3D: High-fidelity Mesh Generation <br> with 3D Native Generation and Interactive Geometry Refiner<div> 
 #####  <p align="center"> [Weiyu Li<sup>*1,2</sup>](https://wyysf-98.github.io/), Jiarui Liu<sup>*1,2</sup>, Hongyu Yan<sup>*1,2</sup>, [Rui Chen<sup>1,2</sup>](https://aruichen.github.io/), [Yixun Liang<sup>2,3</sup>](https://yixunliang.github.io/), [Xuelin Chen<sup>4</sup>](https://xuelin-chen.github.io/), [Ping Tan<sup>1,2</sup>](https://ece.hkust.edu.hk/pingtan), [Xiaoxiao Long<sup>1,2</sup>](https://www.xxlong.site/)</p>
 #####  <p align="center"> <sup>1</sup>HKUST, <sup>2</sup>LightIllusions, <sup>3</sup>HKUST(GZ), <sup>4</sup>Tencent AI Lab</p>
 <div align="center">
