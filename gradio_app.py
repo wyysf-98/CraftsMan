@@ -254,7 +254,7 @@ if __name__=="__main__":
 
                 with gr.Row():
                     gr.Examples(
-                        examples=[os.path.join("./assets/examples", i) for i in os.listdir("./assets/examples")],
+                        examples=[os.path.join("./asset/examples", i) for i in os.listdir("./asset/examples")],
                         inputs=[image_input],
                         examples_per_page=8
                     )
