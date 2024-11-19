@@ -251,9 +251,9 @@ class PixArtDiffusionSystem(BaseSystem):
         return {
             "loss_diffusion": loss,
             "latents": latents,
-            "x_t": x_t,
+            "x_0": noisy_z,
             "noise": noise,
-            "noise_pred": pred_noise,
+            "noise_pred": noise_pred,
             "timesteps": timesteps,
             }
 
