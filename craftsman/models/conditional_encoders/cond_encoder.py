@@ -277,26 +277,6 @@ class CondEmbedder(BaseEmbedder):
         else:
             return vision_outputs.last_hidden_state
 
-    def post_process_embeds(self, text_embeds, visual_embeds):
-        clip_embeds, dino_embeds = visual_embeds.chunk(2, dim=2)
-        if self.cfg.normalize_embeds:
-            # post-process the text/visual embeds
-            if text_embeds is not None:
-                text_embeds = text_embeds / text_embeds.norm(dim=-1, keepdim=True)
-            if clip_embeds is not None:
-                clip_embeds = clip_embeds / clip_embeds.norm(dim=-1, keepdim=True)
-            if dino_embeds is not None:
-                dino_embeds = dino_embeds / dino_embeds.norm(dim=-1, keepdim=True)
-
-        assert text_embeds is not None or dino_embeds is not None or clip_embeds is not None
-            
-        if text_embeds is not None and visual_embeds is not None:
-            return torch.cat([text_embeds, visual_embeds], dim=1)
-        elif text_embeds is not None:
-            return text_embeds
-        else:
-            return visual_embeds
-
     def encode_image(self, images: Iterable[Optional[ImageType]], cameras: Optional[torch.Tensor] = None, force_none_camera_embeds: bool = False, return_dict: bool = False, **kwargs) -> torch.FloatTensor:
         clip_embeds = self.encode_image_clip(images, cameras)
         dino_embeds = self.encode_image_dino(images, cameras)
