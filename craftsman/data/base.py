@@ -53,7 +53,7 @@ class BaseDataModuleConfig:
     # for occupancy and sdf data
     n_samples: int = 4096                # number of points in input point cloud
     upsample_ratio: int = 1              # upsample ratio for input point cloud
-    sampling_strategy: str = "random"    # sampling strategy for input point cloud
+    sampling_strategy: Optional[str] = None    # sampling strategy for input point cloud
     scale: float = 1.0                   # scale of the input point cloud and target supervision
     load_supervision: bool = True        # whether to load supervision
     supervision_type: str = "occupancy"  # occupancy, sdf, tsdf
@@ -70,6 +70,8 @@ class BaseDataModuleConfig:
     idx: Optional[List[int]] = None      # index of the image to load
     n_views: int = 1                     # number of views
     marign_pix_dis: int = 30             # margin of the bounding box
+    batch_size: int = 32
+    num_workers: int = 8
 
 
 class BaseDataset(Dataset):
@@ -78,7 +80,7 @@ class BaseDataset(Dataset):
         self.cfg: BaseDataModuleConfig = cfg
         self.split = split
 
-        self.uids = json.load(open(f'{cfg.root_dir}/{split}.json'))
+        self.uids = json.load(open(f'{cfg.local_dir}/{split}.json'))
         print(f"Loaded {len(self.uids)} {split} uids")
     
     def __len__(self):
@@ -94,10 +96,7 @@ class BaseDataset(Dataset):
             surface = np.concatenate([surface, normal], axis=1)
         elif self.cfg.geo_data_type == "sdf":
             # for sdf data with our own format
-            if re.match(r"\.\.", self.uids[index]):
-                data = np.load(f'{self.cfg.geo_data_path}/{self.uids[index]}.npz')
-            else:
-                data = np.load(f'{self.uids[index]}.npz')
+            data = np.load(f'{self.cfg.geo_data_path}/{self.uids[index]}.npz')
             # for input point cloud
             surface = data["surface"]
         else:
@@ -112,6 +111,8 @@ class BaseDataset(Dataset):
             import fpsample
             kdline_fps_samples_idx = fpsample.bucket_fps_kdline_sampling(surface[:, :3], self.cfg.n_samples, h=5)
             surface = surface[kdline_fps_samples_idx]
+        elif self.cfg.sampling_strategy is None:
+            pass
         else:
             raise NotImplementedError(f"sampling strategy {self.cfg.sampling_strategy} not implemented")
         # rescale data
@@ -189,9 +190,9 @@ class BaseDataset(Dataset):
             sel_idx = random.choice(self.cfg.idx)
             ret["sel_image_idx"] = sel_idx
             if self.cfg.image_type == "rgb":
-                img_path = f'{self.cfg.image_data_path}/' + "/".join(self.uids[index].split('/')[-2:]) + f"/{'{:04d}'.format(sel_idx)}_rgb.png"
+                img_path = f'{self.cfg.image_data_path}/' + "/".join(self.uids[index].split('/')[-2:]) + f"/{'{:04d}'.format(sel_idx)}_rgb.jpeg"
             elif self.cfg.image_type == "normal":
-                img_path = f'{self.cfg.image_data_path}/' + "/".join(self.uids[index].split('/')[-2:]) + f"/{'{:04d}'.format(sel_idx)}_normal.png"
+                img_path = f'{self.cfg.image_data_path}/' + "/".join(self.uids[index].split('/')[-2:]) + f"/{'{:04d}'.format(sel_idx)}_normal.jpeg"
             ret["image"], ret["mask"] = _load_single_image(img_path, background_color, self.cfg.marign_pix_dis)
 
         else:

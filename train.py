@@ -170,20 +170,6 @@ def main(args, extras) -> None:
     rank = get_rank()
     pl.seed_everything(cfg.seed + rank, workers=True)
 
-    # set environment variables for streaming
-    os.environ["LOCAL_WORLD_SIZE"] = f'{n_gpus}'
-    os.environ["RANK"] = str(rank)
-    os.environ["LOCAL_RANK"] = str(rank % n_gpus)
-    os.environ['WORLD_SIZE'] = f'{n_gpus*cfg.trainer.num_nodes}'
-    SHM_PREFIX = f'{cfg.trial_dir.split("/")[-1]}_u{getpass.getuser()}_s{cfg.seed}_'
-    # t{datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}_
-    os.environ["MOSAICML_STREAMING_SHM_PREFIX"] = SHM_PREFIX
-    print(f"LOCAL_WORLD_SIZE: {os.environ['LOCAL_WORLD_SIZE']}")
-    print(f"RANK: {os.environ['RANK']}")
-    print(f"LOCAL_RANK: {os.environ['LOCAL_RANK']}")
-    print(f"WORLD_SIZE: {os.environ['WORLD_SIZE']}")
-    print(f"MOSAICML_STREAMING_SHM_PREFIX: {os.environ['MOSAICML_STREAMING_SHM_PREFIX']}")
-
     dm = craftsman.find(cfg.data_type)(cfg.data)
     system: BaseSystem = craftsman.find(cfg.system_type)(
         cfg.system, resumed=cfg.resume is not None

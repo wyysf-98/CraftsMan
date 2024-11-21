@@ -170,3 +170,4 @@ archive
 /.vscode
 *.sh
 .gradio
+/data
