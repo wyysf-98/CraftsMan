@@ -85,7 +85,6 @@ system:
     context_dim: 1024
     init_scale: 1.0
     skip_ln: true
-    variance_type: ${system.noise_scheduler.variance_type}
     use_checkpoint: true
 
   noise_scheduler_type: "diffusers.schedulers.DDPMScheduler"
