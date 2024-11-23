@@ -46,7 +46,6 @@ class CondEmbedder(BaseEmbedder):
         enable_gradient_checkpointing: bool = False
         embeds_fusion_mode: int = 1 # 0: sum | 1: concat
         linear_proj_init: str = "constant"
-        text_model_type: str = "clip"
         text_max_length: int = 77
         image_size_clip: int = 224
         image_size_dino: int = 224
