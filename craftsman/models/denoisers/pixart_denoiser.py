@@ -33,7 +33,6 @@ class PixArtDinoDenoiser(BaseModule):
         img_pos_embed: bool = False
         clip_weight: float = 1.0
         dino_weight: float = 1.0
-        dit_block: str = ""
 
     cfg: Config
 
@@ -63,9 +62,8 @@ class PixArtDinoDenoiser(BaseModule):
 
         init_scale = self.cfg.init_scale * math.sqrt(1.0 / self.cfg.width)
         drop_path = [x.item() for x in torch.linspace(0, self.cfg.drop_path, self.cfg.layers)]
-        ditblock =  getattr(importlib.import_module("craftsman.models.denoisers.utils"), self.cfg.dit_block)
         self.blocks = nn.ModuleList([
-            ditblock(
+            DiTBlock(
                     width=self.cfg.width, 
                     heads=self.cfg.heads, 
                     init_scale=init_scale, 

@@ -87,7 +87,6 @@ system:
     skip_ln: true
     variance_type: ${system.noise_scheduler.variance_type}
     use_checkpoint: true
-    dit_block: DiTBlock
 
   noise_scheduler_type: "diffusers.schedulers.DDPMScheduler"
   noise_scheduler:
