@@ -84,7 +84,6 @@ system:
     heads: 12
     context_dim: 1024
     init_scale: 1.0
-    skip_ln: true
     use_checkpoint: true
 
   noise_scheduler_type: "diffusers.schedulers.DDPMScheduler"
