@@ -112,8 +112,8 @@ The latent set diffusion model 在很大程度上基于[Michelangelo](https://gi
 我们将根据实际情况考虑开源进一步的模型。
 ```bash
 ## 您可以直接使用 wget 下载:
-wegt https://huggingface.co/craftsman3d/craftsman-v1-5/blob/main/config.yaml
-wegt https://huggingface.co/craftsman3d/craftsman-v1-5/blob/main/model.ckpt
+wget https://huggingface.co/craftsman3d/craftsman-v1-5/resolve/main/config.yaml
+wget https://huggingface.co/craftsman3d/craftsman-v1-5/resolve/main/model.ckpt
 
 ## 或者克隆模型仓库:
 git lfs install

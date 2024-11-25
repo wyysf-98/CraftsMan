@@ -119,8 +119,8 @@ If you run the ``inference.py`` without specifying the model path, it will autom
 Or you can download the model manually:
 ```bash
 ## you can just manually get the model using wget:
-wget https://huggingface.co/craftsman3d/craftsman-v1-5/blob/main/config.yaml
-wget https://huggingface.co/craftsman3d/craftsman-v1-5/blob/main/model.ckpt
+wget https://huggingface.co/craftsman3d/craftsman-v1-5/resolve/main/config.yaml
+wget https://huggingface.co/craftsman3d/craftsman-v1-5/resolve/main/model.ckpt
 
 ## or you can git clone the repo:
 git lfs install
