@@ -149,11 +149,11 @@ python inference.py --input eval_data --device 0 --model ./ckpts/craftsman
 
 ```bash
 ### 训练形状自动编码器
-python launch.py --config ./configs/shape-autoencoder/l256-e64-ne8-nd16.yaml \
+python train.py --config ./configs/shape-autoencoder/l256-e64-ne8-nd16.yaml \
                  --train --gpu 0
 
 ### 训练单视图DiT模型
-python launch.py --config .configs/image-to-shape-diffusion/clip-dino-rgb-pixart-lr2e4-ddim.yaml \
+python train.py --config .configs/image-to-shape-diffusion/clip-dino-rgb-pixart-lr2e4-ddim.yaml \
                  --train --gpu 0
 
 ```

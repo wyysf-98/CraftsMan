@@ -155,11 +155,11 @@ For more training details and configs, please refer to the `configs` folder.
 
 ```bash
 ### training the shape-autoencoder
-python launch.py --config ./configs/shape-autoencoder/michelangelo-l768-e64-ne8-nd16.yaml \
+python train.py --config ./configs/shape-autoencoder/michelangelo-l768-e64-ne8-nd16.yaml \
                  --train --gpu 0
 
 ### training the image-to-shape diffusion model
-python launch.py --config .configs/image-to-shape-diffusion/clip-dino-rgb-pixart-lr2e4-ddim.yaml \
+python train.py --config .configs/image-to-shape-diffusion/clip-dino-rgb-pixart-lr2e4-ddim.yaml \
                  --train --gpu 0
 
 ```
