@@ -21,10 +21,10 @@ from craftsman import CraftsManPipeline
 import torch
 
 # load from local ckpt
-# pipeline = CraftsManPipeline.from_pretrained("./ckpts/craftsman-v1-5", device="cuda:0", torch_dtype=torch.float32) 
+# pipeline = CraftsManPipeline.from_pretrained("./ckpts/craftsman", device="cuda:0", torch_dtype=torch.float32) 
 
 # load from huggingface model hub
-pipeline = CraftsManPipeline.from_pretrained("craftsman3d/craftsman-v1-5", device="cuda:0", torch_dtype=torch.float32)
+pipeline = CraftsManPipeline.from_pretrained("craftsman3d/craftsman", device="cuda:0", torch_dtype=torch.float32)
 
 # inference
 mesh = pipeline("https://pub-f9073a756ec645d692ce3d171c2e1232.r2.dev/data/werewolf.png").meshes[0]
@@ -120,27 +120,27 @@ If you run the ``inference.py`` without specifying the model path, it will autom
 Or you can download the model manually:
 ```bash
 ## you can just manually get the model using wget:
-wget https://huggingface.co/craftsman3d/craftsman-v1-5/resolve/main/config.yaml
-wget https://huggingface.co/craftsman3d/craftsman-v1-5/resolve/main/model.ckpt
+wget https://huggingface.co/craftsman3d/craftsman/resolve/main/config.yaml
+wget https://huggingface.co/craftsman3d/craftsman/resolve/main/model.ckpt
 
 ## or you can git clone the repo:
 git lfs install
-git clone https://huggingface.co/craftsman3d/craftsman-v1-5
+git clone https://huggingface.co/craftsman3d/craftsman
 
 ```
-If you download the models using wget, you should manually put them under the `ckpts/craftsman-v1-5` directory.
+If you download the models using wget, you should manually put them under the `ckpts/craftsman` directory.
 
 ## Gradio demo
 We provide gradio demos for easy usage.
 
 ```bash
-python gradio_app.py --model_path ./ckpts/craftsman-v1-5
+python gradio_app.py --model_path ./ckpts/craftsman
 ```
 
 ## Inference
 To generate 3D meshes from images folders via command line, simply run:
 ```bash
-python inference.py --input eval_data --device 0 --model ./ckpts/craftsman-v1-5
+python inference.py --input eval_data --device 0 --model ./ckpts/craftsman
 ```
 
 For more configs, please refer to the `inference.py`.
@@ -201,7 +201,7 @@ Q: Tips to get better results.
 
 
 # 📑License
-CraftsMan-v1-5 shares the same license with the SD15, which is under [creativeml-openrail-m](https://raw.githubusercontent.com/CompVis/stable-diffusion/refs/heads/main/LICENSE). If you have any questions about the usage of CraftsMan, please contact us first.
+CraftsMan shares the same license with the SD15, which is under [creativeml-openrail-m](https://raw.githubusercontent.com/CompVis/stable-diffusion/refs/heads/main/LICENSE). If you have any questions about the usage of CraftsMan, please contact us first.
 
 
 # 📖 BibTeX

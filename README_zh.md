@@ -19,10 +19,10 @@ from craftsman import CraftsManPipeline
 import torch
 
 # load from local ckpt
-# pipeline = CraftsManPipeline.from_pretrained("./ckpts/craftsman-v1-5", device="cuda:0", torch_dtype=torch.float32) 
+# pipeline = CraftsManPipeline.from_pretrained("./ckpts/craftsman", device="cuda:0", torch_dtype=torch.float32) 
 
 # load from huggingface model hub
-pipeline = CraftsManPipeline.from_pretrained("craftsman3d/craftsman-v1-5", device="cuda:0", torch_dtype=torch.float32)
+pipeline = CraftsManPipeline.from_pretrained("craftsman3d/craftsman", device="cuda:0", torch_dtype=torch.float32)
 
 # inference
 mesh = pipeline("https://pub-f9073a756ec645d692ce3d171c2e1232.r2.dev/data/werewolf.png").meshes[0]
@@ -112,15 +112,15 @@ The latent set diffusion model 在很大程度上基于[Michelangelo](https://gi
 我们将根据实际情况考虑开源进一步的模型。
 ```bash
 ## 您可以直接使用 wget 下载:
-wget https://huggingface.co/craftsman3d/craftsman-v1-5/resolve/main/config.yaml
-wget https://huggingface.co/craftsman3d/craftsman-v1-5/resolve/main/model.ckpt
+wget https://huggingface.co/craftsman3d/craftsman/resolve/main/config.yaml
+wget https://huggingface.co/craftsman3d/craftsman/resolve/main/model.ckpt
 
 ## 或者克隆模型仓库:
 git lfs install
-git clone https://huggingface.co/craftsman3d/craftsman-v1-5
+git clone https://huggingface.co/craftsman3d/craftsman
 
 ```
-如果使用 wget 下载，应该手动将模型文件放置于 `ckpts/craftsman-v1-5` 文件夹。
+如果使用 wget 下载，应该手动将模型文件放置于 `ckpts/craftsman` 文件夹。
 
 
 ## Gradio 示例
@@ -128,14 +128,14 @@ git clone https://huggingface.co/craftsman3d/craftsman-v1-5
 要在本地机器上运行gradio演示，请简单运行：
 
 ```bash
-python gradio_app.py --model_path ./ckpts/craftsman-v1-5
+python gradio_app.py --model_path ./ckpts/craftsman
 
 ```
 
 ## 模型推理
 要通过命令行从图像文件夹生成3D网格，简单运行：
 ```bash
-python inference.py --input eval_data --device 0 --model ./ckpts/craftsman-v1-5
+python inference.py --input eval_data --device 0 --model ./ckpts/craftsman
 ```
 
 更多推理配置，请参考 `inference.py`
