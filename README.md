@@ -9,7 +9,8 @@
 <div align="center">
   <a href="https://craftsman3d.github.io/"><img src="https://img.shields.io/static/v1?label=Project%20Page&message=Github&color=blue&logo=github-pages"></a> &ensp;
   <a href="https://huggingface.co/spaces/wyysf/CraftsMan"><img src="https://www.gradio.app/_app/immutable/assets/gradio.CHB5adID.svg" height="25"/>(HF)</a> &ensp;
-  <a href="http://algodemo.bj.lightions.top:24926"><img src="https://www.gradio.app/_app/immutable/assets/gradio.CHB5adID.svg" height="25"/>(Local)</a> &ensp;
+  <a href="http://143.89.144.14/"><img src="asset/icon.png" height="25"/>(Local Demo)</a> &ensp;
+  <a href="http://algodemo.bj.lightions.top:24926"><img src="https://www.gradio.app/_app/immutable/assets/gradio.CHB5adID.svg" height="25"/>(Local_bak)</a> &ensp;
   <a href="https://arxiv.org/pdf/2405.14979"><img src="https://img.shields.io/static/v1?label=Paper&message=Arxiv&color=red&logo=arxiv"></a> &ensp;
 </div>
 
@@ -20,10 +21,10 @@ from craftsman import CraftsManPipeline
 import torch
 
 # load from local ckpt
-# pipeline = CraftsManPipeline.from_pretrained("./ckpts/craftsman-v1-5", device="cuda:0", torch_dtype=torch.float32) 
+# pipeline = CraftsManPipeline.from_pretrained("./ckpts/craftsman", device="cuda:0", torch_dtype=torch.float32) 
 
 # load from huggingface model hub
-pipeline = CraftsManPipeline.from_pretrained("craftsman3d/craftsman-v1-5", device="cuda:0", torch_dtype=torch.float32)
+pipeline = CraftsManPipeline.from_pretrained("craftsman3d/craftsman", device="cuda:0", torch_dtype=torch.float32)
 
 # inference
 mesh = pipeline("https://pub-f9073a756ec645d692ce3d171c2e1232.r2.dev/data/werewolf.png").meshes[0]
@@ -119,27 +120,27 @@ If you run the ``inference.py`` without specifying the model path, it will autom
 Or you can download the model manually:
 ```bash
 ## you can just manually get the model using wget:
-wget https://huggingface.co/craftsman3d/craftsman-v1-5/blob/main/config.yaml
-wget https://huggingface.co/craftsman3d/craftsman-v1-5/blob/main/model.ckpt
+wget https://huggingface.co/craftsman3d/craftsman/resolve/main/config.yaml
+wget https://huggingface.co/craftsman3d/craftsman/resolve/main/model.ckpt
 
 ## or you can git clone the repo:
 git lfs install
-git clone https://huggingface.co/craftsman3d/craftsman-v1-5
+git clone https://huggingface.co/craftsman3d/craftsman
 
 ```
-If you download the models using wget, you should manually put them under the `ckpts/craftsman-v1-5` directory.
+If you download the models using wget, you should manually put them under the `ckpts/craftsman` directory.
 
 ## Gradio demo
 We provide gradio demos for easy usage.
 
 ```bash
-python gradio_app.py --model_path ./ckpts/craftsman-v1-5
+python gradio_app.py --model_path ./ckpts/craftsman
 ```
 
 ## Inference
 To generate 3D meshes from images folders via command line, simply run:
 ```bash
-python inference.py --input eval_data --device 0 --model ./ckpts/craftsman-v1-5
+python inference.py --input eval_data --device 0 --model ./ckpts/craftsman
 ```
 
 For more configs, please refer to the `inference.py`.
@@ -154,11 +155,11 @@ For more training details and configs, please refer to the `configs` folder.
 
 ```bash
 ### training the shape-autoencoder
-python launch.py --config ./configs/shape-autoencoder/michelangelo-l768-e64-ne8-nd16.yaml \
+python train.py --config ./configs/shape-autoencoder/michelangelo-l768-e64-ne8-nd16.yaml \
                  --train --gpu 0
 
 ### training the image-to-shape diffusion model
-python launch.py --config .configs/image-to-shape-diffusion/clip-dino-rgb-pixart-lr2e4-ddim.yaml \
+python train.py --config .configs/image-to-shape-diffusion/clip-dino-rgb-pixart-lr2e4-ddim.yaml \
                  --train --gpu 0
 
 ```
@@ -200,7 +201,7 @@ Q: Tips to get better results.
 
 
 # 📑License
-CraftsMan-v1-5 shares the same license with the SD15, which is under [creativeml-openrail-m](https://raw.githubusercontent.com/CompVis/stable-diffusion/refs/heads/main/LICENSE). If you have any questions about the usage of CraftsMan, please contact us first.
+CraftsMan shares the same license with the SD15, which is under [creativeml-openrail-m](https://raw.githubusercontent.com/CompVis/stable-diffusion/refs/heads/main/LICENSE). If you have any questions about the usage of CraftsMan, please contact us first.
 
 
 # 📖 BibTeX
