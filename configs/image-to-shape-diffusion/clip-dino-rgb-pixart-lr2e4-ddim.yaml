@@ -79,9 +79,9 @@ system:
     input_channels: ${system.shape_model.embed_dim}
     output_channels:  ${system.shape_model.embed_dim}
     n_ctx: ${system.shape_model.num_latents}
-    width: 768
+    width: 1024
     layers: 32
-    heads: 12
+    heads: 16
     context_dim: 1024
     init_scale: 1.0
     use_checkpoint: true
