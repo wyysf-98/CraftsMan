@@ -83,7 +83,7 @@ class CraftsManPipeline():
         """
         if isinstance(image, str):
             assert os.path.isfile(image) or image.startswith("http"), "Input image must be a valid URL or a file path."
-        elif isinstance(image, (torch.Tensor, PIL.Image.Image)):
+        elif not isinstance(image, (torch.Tensor, PIL.Image.Image)):
             raise ValueError("Input image must be a `torch.Tensor` or `PIL.Image.Image`.")
         
     def preprocess_image(
